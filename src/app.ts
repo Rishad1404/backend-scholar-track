@@ -1,4 +1,5 @@
 import express,{ Application, Request, Response } from "express";
+import { prisma } from "./lib/prisma";
 
 
 const app:Application=express()
@@ -10,8 +11,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Basic route
-app.get('/', (req: Request, res: Response) => {
-  res.send('Hello, TypeScript + Express!');
+app.get('/', async(req: Request, res: Response) => {
+  const level=await prisma.academicLevel.create({
+    data:{
+      name:"Level 4"
+    }
+  })
+  res.status(201).json({
+    success:true,
+    message:"API is working",
+    data:level
+  })
 });
 
 export default app
