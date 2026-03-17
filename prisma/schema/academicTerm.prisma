@@ -1,0 +1,15 @@
+
+model AcademicTerm {
+  id   String @id @default(uuid(7))
+  name String @unique @db.VarChar(100)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  @@index([isDeleted], name: "idx_academic_term_isDeleted")
+  @@index([name], name: "idx_academic_term_name")
+  @@map("academic_terms")
+}
