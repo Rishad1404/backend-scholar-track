@@ -1,0 +1,23 @@
+model Department {
+  id           String @id @default(uuid(7))
+  universityId String @db.VarChar(36)
+  name         String @db.VarChar(255)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  university      University       @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  scholarships    Scholarship[]
+  studentAcademicInfos StudentAcademicInfo[]
+  departmentHeads DepartmentHead[]
+  invites         Invite[]
+
+  @@unique([universityId, name]) // same dept name can't exist twice in one uni
+  @@index([isDeleted], name: "idx_department_isDeleted")
+  @@index([universityId], name: "idx_department_universityId")
+  @@map("departments")
+}

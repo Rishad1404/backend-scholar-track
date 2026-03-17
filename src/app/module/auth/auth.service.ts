@@ -1,10 +1,12 @@
 import { UserStatus } from "../../../generated/prisma/enums";
 import { auth } from "../../lib/auth";
+import { prisma } from "../../lib/prisma";
+
 
 interface IRegisterStudentPayload{
     name:string,
     email:string,
-    password:string
+    password:string,
 }
 
 const registerStudent=async(payload:IRegisterStudentPayload)=>{
@@ -23,11 +25,21 @@ const registerStudent=async(payload:IRegisterStudentPayload)=>{
     }
 
     //TODO:Create student after sign up
-    // const student=prisma.$transaction(async(tx)=>{
-    //     await tx.
-    // })
+    const student=await prisma.$transaction(async(tx)=>{
+        const studentTx=await tx.student.create({
+            data:{
+                userId:data.user.id,
+                name:payload.name,
+                email:payload.email,
+            }
+        })
+        return studentTx
+    })
 
-    return data;
+    return {
+        ...data,
+        student
+    };
 }
 
 const loginUser=async(payload:IRegisterStudentPayload)=>{

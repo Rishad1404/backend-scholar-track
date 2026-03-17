@@ -1,0 +1,31 @@
+enum DocumentType {
+  TRANSCRIPT
+  INCOME_CERTIFICATE
+  NATIONAL_ID
+  PERSONAL_ESSAY
+  RECOMMENDATION_LETTER
+  OTHER
+}
+
+model ApplicationDocument {
+  id            String       @id @default(uuid(7))
+  applicationId String       @db.VarChar(36)
+  type          DocumentType
+
+  fileUrl  String @db.VarChar(500) // Cloudinary secure URL
+  publicId String @db.VarChar(255) // Cloudinary public_id (needed for deletion)
+  fileName String @db.VarChar(255) // original file name shown to user
+  fileSize Int    @db.Integer // in bytes
+
+  uploadedAt DateTime @default(now())
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId], name: "idx_app_doc_applicationId")
+  @@index([isDeleted], name: "idx_app_doc_isDeleted")
+  @@map("application_documents")
+}

@@ -1,0 +1,28 @@
+model StudentAcademicInfo {
+  id           String @id @default(uuid(7))
+  studentId    String @unique @db.VarChar(36)
+  departmentId String @db.VarChar(36)
+  levelId      String @db.VarChar(36)
+  termId       String @db.VarChar(36)
+
+  gpa                  Float                 @db.DoublePrecision
+  cgpa                 Float                 @db.DoublePrecision
+  creditHoursCompleted Int                   @default(0) @db.Integer
+  academicStatus       StudentAcademicStatus @default(REGULAR)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  student    Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  department Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  level      AcademicLevel @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  term       AcademicTerm  @relation(fields: [termId], references: [id], onDelete: Restrict)
+
+  @@index([isDeleted], name: "idx_student_academic_isDeleted")
+  @@index([departmentId], name: "idx_student_academic_departmentId")
+  @@map("student_academic_info")
+}

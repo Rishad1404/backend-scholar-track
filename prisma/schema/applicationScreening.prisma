@@ -1,0 +1,22 @@
+model ApplicationScreening {
+  id            String @id @default(uuid(7))
+  applicationId String @unique @db.VarChar(36)
+  reviewerId    String @db.VarChar(36)
+
+  passed  Boolean
+  comment String? @db.Text
+
+  reviewedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation("ScreeningReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  @@index([reviewerId], name: "idx_screening_reviewerId")
+  @@index([isDeleted], name: "idx_screening_isDeleted")
+  @@map("application_screenings")
+}

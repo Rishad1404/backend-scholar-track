@@ -1,0 +1,38 @@
+enum NotificationType {
+  APPLICATION_SUBMITTED
+  APPLICATION_SCREENING_PASSED
+  APPLICATION_SCREENING_REJECTED
+  APPLICATION_UNDER_REVIEW
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  DISBURSEMENT_PROCESSED
+  SCHOLARSHIP_PUBLISHED
+  INVITE_RECEIVED
+  UNIVERSITY_APPROVED
+  UNIVERSITY_SUSPENDED
+  SYSTEM_ANNOUNCEMENT
+}
+
+model Notification {
+  id     String           @id @default(uuid(7))
+  userId String           @db.VarChar(36)
+  type   NotificationType
+
+  title   String  @db.VarChar(255)
+  message String  @db.Text
+  link    String? @db.VarChar(500) // optional deep-link into the dashboard
+  isRead  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "idx_notification_userId")
+  @@index([isRead], name: "idx_notification_isRead")
+  @@index([isDeleted], name: "idx_notification_isDeleted")
+  @@map("notifications")
+}

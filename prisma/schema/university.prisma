@@ -1,0 +1,36 @@
+model University {
+  id           String  @id @default(uuid(7))
+  name         String  @db.VarChar(255)
+  logoUrl      String? @db.VarChar(500)
+  logoPublicId String? @db.VarChar(255) // Cloudinary public_id for deletion
+  website      String? @db.VarChar(500)
+  isApproved   Boolean @default(false)
+  isSuspended  Boolean @default(false)
+
+  // Stripe
+  stripeCustomerId String? @db.VarChar(100)
+  subscriptionId   String? @db.VarChar(100)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  admins          Admin[]
+  departments     Department[]
+  academicLevels  AcademicLevel[]
+  academicTerms   AcademicTerm[]
+  scholarships    Scholarship[]
+  students        Student[]
+  departmentHeads DepartmentHead[]
+  reviewers       Reviewer[]
+  payments        Payment[]
+  invites         Invite[]
+  applications    Application[]
+
+  @@index([isDeleted], name: "idx_university_isDeleted")
+  @@index([name], name: "idx_university_name")
+  @@map("universities")
+}

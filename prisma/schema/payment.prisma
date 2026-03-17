@@ -1,0 +1,54 @@
+enum PaymentType {
+  SUBSCRIPTION
+  SCHOLARSHIP_FUND
+  STUDENT_DISBURSEMENT
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id           String @id @default(uuid(7))
+  universityId String @db.VarChar(36)
+  userId       String @db.VarChar(36)
+
+  scholarshipId String? @db.VarChar(36)
+  applicationId String? @db.VarChar(36)
+
+  paymentType PaymentType
+  amount      Float         @db.DoublePrecision
+  currency    String        @default("BDT") @db.VarChar(10)
+  status      PaymentStatus @default(PENDING)
+
+  // Stripe fields — populated via webhooks
+  stripePaymentId  String? @unique @db.VarChar(100)
+  stripeTransferId String? @unique @db.VarChar(100)
+  stripeCustomerId String? @db.VarChar(100)
+
+  platformFee Float? @db.DoublePrecision
+  metadata    Json?
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  university  University   @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  scholarship Scholarship? @relation(fields: [scholarshipId], references: [id], onDelete: SetNull)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([isDeleted], name: "idx_payment_isDeleted")
+  @@index([universityId], name: "idx_payment_universityId")
+  @@index([paymentType], name: "idx_payment_paymentType")
+  @@index([status], name: "idx_payment_status")
+  @@map("payments")
+}

@@ -5,8 +5,13 @@ model AcademicLevel {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  isDeleted Boolean   @default(false)
-  deletedAt DateTime?
+  isDeleted    Boolean     @default(false)
+  deletedAt    DateTime?
+
+  scholarships Scholarship[]
+  studentAcademicInfos StudentAcademicInfo[]
+  university   University? @relation(fields: [universityId], references: [id])
+  universityId String?
 
   @@index([isDeleted], name: "idx_academic_level_isDeleted")
   @@index([name], name: "idx_academic_level_name")

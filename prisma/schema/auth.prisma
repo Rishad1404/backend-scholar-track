@@ -1,82 +1,100 @@
 enum Role {
-    SUPER_ADMIN
-    UNIVERSITY_ADMIN
-    DEPARTMENT_HEAD
-    REVIEWER
-    STUDENT
+  SUPER_ADMIN
+  UNIVERSITY_ADMIN
+  DEPARTMENT_HEAD
+  COMMITTEE_REVIEWER
+  STUDENT
 }
 
 enum UserStatus {
-    ACTIVE
-    DELETED
-    BANNED
+  ACTIVE
+  DELETED
+  BANNED
 }
 
 model User {
-    id                 String     @id @default(uuid(7))
-    name               String
-    email              String
-    emailVerified      Boolean    @default(false)
-    role               Role       @default(STUDENT)
-    status             UserStatus @default(ACTIVE)
-    needPasswordChange Boolean    @default(false)
-    image              String?
+  id            String     @id @default(uuid(7))
+  name          String     @db.VarChar(255)
+  email         String     @unique @db.VarChar(255)
+  emailVerified Boolean    @default(false)
+  image         String?    @db.VarChar(500)
 
-    isDeleted Boolean   @default(false)
-    deletedAt DateTime?
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    sessions  Session[]
-    accounts  Account[]
+  role      Role       @default(STUDENT)
+  status    UserStatus @default(ACTIVE)
+  needPasswordChange Boolean @default(false)
 
-    @@unique([email])
-    @@map("users")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  sessions Session[]
+  accounts Account[]
+
+  admin   Admin?
+  departmentHead DepartmentHead?
+  reviewer       Reviewer?
+  student        Student?
+
+  notifications    Notification[]
+
+  screeningReviews ApplicationScreening[] @relation("ScreeningReviewer")
+  committeeReviews ApplicationReview[]    @relation("CommitteeReviewer")
+  sentInvites      Invite[]               @relation("InviteSender")
+  payments         Payment[]
+
+  @@index([email], name: "idx_user_email")
+  @@index([role], name: "idx_user_role")
+  @@index([status], name: "idx_user_status")
+  @@index([isDeleted], name: "idx_user_isDeleted")
+  @@map("users")
 }
 
 model Session {
-    id        String   @id
-    expiresAt DateTime
-    token     String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    ipAddress String?
-    userAgent String?
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([token])
-    @@index([userId])
-    @@map("session")
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
 }
 
 model Account {
-    id                    String    @id
-    accountId             String
-    providerId            String
-    userId                String
-    user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    accessToken           String?
-    refreshToken          String?
-    idToken               String?
-    accessTokenExpiresAt  DateTime?
-    refreshTokenExpiresAt DateTime?
-    scope                 String?
-    password              String?
-    createdAt             DateTime  @default(now())
-    updatedAt             DateTime  @updatedAt
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-    @@index([userId])
-    @@map("account")
+  @@index([userId])
+  @@map("account")
 }
 
 model Verification {
-    id         String   @id
-    identifier String
-    value      String
-    expiresAt  DateTime
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-    @@index([identifier])
-    @@map("verification")
+  @@index([identifier])
+  @@map("verification")
 }

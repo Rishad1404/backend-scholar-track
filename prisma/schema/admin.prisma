@@ -1,0 +1,23 @@
+model Admin {
+  id           String @id @default(uuid(7))
+  userId       String @unique @db.VarChar(36)
+  universityId String @db.VarChar(36)
+
+  isOwner     Boolean @default(false) 
+  phone       String? @db.VarChar(20)
+  designation String? @db.VarChar(100)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([isDeleted], name: "idx_admin_profile_isDeleted")
+  @@index([universityId], name: "idx_admin_profile_universityId")
+  @@map("admins")
+}

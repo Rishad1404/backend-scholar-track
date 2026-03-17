@@ -1,0 +1,53 @@
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  SCREENING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  DISBURSED
+}
+
+model Application {
+  id            String @id @default(uuid(7))
+  studentId     String @db.VarChar(36)
+  scholarshipId String @db.VarChar(36)
+  universityId  String @db.VarChar(36)
+
+  status ApplicationStatus @default(DRAFT)
+
+  essay         String? @db.Text
+  financialInfo Json?
+
+  aiEligible       Boolean?
+  aiEligibleReason String?  @db.Text
+  aiScore          Float?
+  aiSummary        String?  @db.Text
+  aiEssayScore     Float?
+
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  student      Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  scholarship  Scholarship           @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  university   University            @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  documents    ApplicationDocument[]
+  screening    ApplicationScreening?
+  reviews      ApplicationReview[]
+  disbursement Disbursement?
+  payments     Payment[]
+
+  // A student can only apply once per scholarship
+  @@unique([studentId, scholarshipId], name: "unique_student_scholarship")
+  @@index([isDeleted], name: "idx_application_isDeleted")
+  @@index([studentId], name: "idx_application_studentId")
+  @@index([scholarshipId], name: "idx_application_scholarshipId")
+  @@index([universityId], name: "idx_application_universityId")
+  @@index([status], name: "idx_application_status")
+  @@map("applications")
+}

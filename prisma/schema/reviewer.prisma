@@ -1,0 +1,23 @@
+model Reviewer {
+  id           String @id @default(uuid(7))
+  userId       String @unique @db.VarChar(36)
+  universityId String @db.VarChar(36)
+
+  expertise   String? @db.VarChar(255)
+  designation String? @db.VarChar(100)
+  phone       String? @db.VarChar(20)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([isDeleted], name: "idx_reviewer_isDeleted")
+  @@index([universityId], name: "idx_reviewer_universityId")
+  @@map("reviewers")
+}

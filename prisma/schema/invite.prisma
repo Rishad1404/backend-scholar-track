@@ -1,0 +1,32 @@
+model Invite {
+  id              String @id @default(uuid(7))
+  universityId    String @db.VarChar(36)
+  invitedByUserId String @db.VarChar(36) // which admin sent this invite
+
+  email String @db.VarChar(255)
+  role  Role // UNIVERSITY_ADMIN, DEPARTMENT_HEAD, or COMMITTEE_REVIEWER
+
+  // For DEPARTMENT_HEAD invites — which department they're assigned to
+  departmentId String? @db.VarChar(36)
+
+  token     String   @unique @db.VarChar(500)
+  used      Boolean  @default(false)
+  expiresAt DateTime // invite expires (e.g. 7 days)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  university University  @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  invitedBy  User        @relation("InviteSender", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([email], name: "idx_invite_email")
+  @@index([token], name: "idx_invite_token")
+  @@index([universityId], name: "idx_invite_universityId")
+  @@index([isDeleted], name: "idx_invite_isDeleted")
+  @@map("invites")
+}

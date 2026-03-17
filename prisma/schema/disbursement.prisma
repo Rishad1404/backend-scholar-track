@@ -1,0 +1,32 @@
+enum DisbursementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Disbursement {
+  id            String @id @default(uuid(7))
+  applicationId String @unique @db.VarChar(36) // 1:1 with Application
+
+  amount Float              @db.DoublePrecision
+  status DisbursementStatus @default(PENDING)
+
+  // Stripe fields — populated after webhook
+  stripeTransferId String? @unique @db.VarChar(100)
+  stripeAccountId  String? @db.VarChar(100) // student's connected Stripe account
+
+  processedAt DateTime? // when transfer succeeded
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([isDeleted], name: "idx_disbursement_isDeleted")
+  @@index([status], name: "idx_disbursement_status")
+  @@map("disbursements")
+}

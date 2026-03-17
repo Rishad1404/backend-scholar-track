@@ -1,0 +1,30 @@
+model ApplicationReview {
+  id            String @id @default(uuid(7))
+  applicationId String @db.VarChar(36)
+  reviewerId    String @db.VarChar(36)
+
+  gpaScore       Float @db.DoublePrecision
+  essayScore     Float @db.DoublePrecision
+  financialScore Float @db.DoublePrecision
+  criteriaScore  Float @db.DoublePrecision
+  totalScore     Float @db.DoublePrecision
+
+  notes String? @db.Text
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  // Relations
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation("CommitteeReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  // One reviewer can only score an application once
+  @@unique([applicationId, reviewerId], name: "unique_application_reviewer")
+  @@index([applicationId], name: "idx_review_applicationId")
+  @@index([reviewerId], name: "idx_review_reviewerId")
+  @@index([isDeleted], name: "idx_review_isDeleted")
+  @@map("application_reviews")
+}
