@@ -1,5 +1,5 @@
 import { AcademicLevel } from "../../../generated/prisma/client";
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../lib/prisma";
 
 const createAcademicLevel=async(payload:AcademicLevel):Promise<AcademicLevel> =>{
     const level=await prisma.academicLevel.create({

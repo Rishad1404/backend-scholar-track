@@ -1,5 +1,5 @@
 import { AcademicTerm } from "../../../generated/prisma/client"
-import { prisma } from "../../../lib/prisma"
+import { prisma } from "../../lib/prisma"
 
 
 const createAcademicTerm=async(payload:AcademicTerm):Promise<AcademicTerm> =>{
