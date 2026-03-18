@@ -8,8 +8,8 @@ enum DocumentType {
 }
 
 model ApplicationDocument {
-  id            String       @id @default(uuid(7))
-  applicationId String       @db.VarChar(36)
+  id            String       @id @default(uuid())
+  applicationId String       
   type          DocumentType
 
   fileUrl  String @db.VarChar(500) // Cloudinary secure URL

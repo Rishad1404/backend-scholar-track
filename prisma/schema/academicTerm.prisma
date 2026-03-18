@@ -1,5 +1,5 @@
 model AcademicTerm {
-  id   String @id @default(uuid(7))
+  id   String @id @default(uuid())
   name String @unique @db.VarChar(100)
 
   createdAt DateTime @default(now())

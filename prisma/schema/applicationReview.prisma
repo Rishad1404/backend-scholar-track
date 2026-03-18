@@ -1,7 +1,7 @@
 model ApplicationReview {
-  id            String @id @default(uuid(7))
-  applicationId String @db.VarChar(36)
-  reviewerId    String @db.VarChar(36)
+  id            String @id @default(uuid())
+  applicationId String 
+  reviewerId    String 
 
   gpaScore       Float @db.DoublePrecision
   essayScore     Float @db.DoublePrecision
@@ -19,7 +19,7 @@ model ApplicationReview {
 
   // Relations
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  reviewer    User        @relation("CommitteeReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  reviewer      Reviewer    @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
 
   // One reviewer can only score an application once
   @@unique([applicationId, reviewerId], name: "unique_application_reviewer")

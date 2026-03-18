@@ -51,6 +51,7 @@ model Student {
   university   University?          @relation(fields: [universityId], references: [id], onDelete: SetNull)
   academicInfo StudentAcademicInfo?
   applications Application[]
+  disbursements Disbursement[]
 
   @@index([isDeleted], name: "idx_student_isDeleted")
   @@index([universityId], name: "idx_student_universityId")

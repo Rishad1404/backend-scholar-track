@@ -1,3 +1,4 @@
+
 enum DisbursementStatus {
   PENDING
   PROCESSING
@@ -6,27 +7,36 @@ enum DisbursementStatus {
 }
 
 model Disbursement {
-  id            String @id @default(uuid(7))
-  applicationId String @unique @db.VarChar(36) // 1:1 with Application
+  id            String @id @default(uuid())
+  applicationId String @unique 
+  studentId     String 
+  approvedById  String 
+  universityId  String 
+  scholarshipId String 
 
-  amount Float              @db.DoublePrecision
-  status DisbursementStatus @default(PENDING)
+  amount   Float              @db.DoublePrecision
+  currency String             @default("BDT") @db.VarChar(10)
+  status   DisbursementStatus @default(PENDING)
 
-  // Stripe fields — populated after webhook
-  stripeTransferId String? @unique @db.VarChar(100)
-  stripeAccountId  String? @db.VarChar(100) // student's connected Stripe account
+  // Stripe Connect Fields
+  stripeTransferId String? @unique 
+  stripePayoutId   String? @unique 
+  platformFee      Float?  @db.DoublePrecision
+  metadata         Json?
 
-  processedAt DateTime? // when transfer succeeded
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  isDeleted Boolean   @default(false)
-  deletedAt DateTime?
+  disbursedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  approvedBy  Admin       @relation(fields: [approvedById], references: [id], onDelete: Restrict)
+  university  University  @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
 
-  @@index([isDeleted], name: "idx_disbursement_isDeleted")
+  @@index([studentId], name: "idx_disbursement_studentId")
+  @@index([universityId], name: "idx_disbursement_universityId")
   @@index([status], name: "idx_disbursement_status")
   @@map("disbursements")
 }

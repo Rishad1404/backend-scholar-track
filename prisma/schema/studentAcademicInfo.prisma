@@ -1,9 +1,10 @@
 model StudentAcademicInfo {
-  id           String @id @default(uuid(7))
-  studentId    String @unique @db.VarChar(36)
-  departmentId String @db.VarChar(36)
-  levelId      String @db.VarChar(36)
-  termId       String @db.VarChar(36)
+  id           String  @id @default(uuid())
+  studentId    String  @unique
+  studentIdNo  String? @db.VarChar(100)
+  departmentId String
+  levelId      String
+  termId       String
 
   gpa                  Float                 @db.DoublePrecision
   cgpa                 Float                 @db.DoublePrecision

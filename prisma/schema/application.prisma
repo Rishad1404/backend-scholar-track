@@ -33,14 +33,14 @@ model Application {
   deletedAt DateTime?
 
   // Relations
-  student      Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  scholarship  Scholarship           @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
-  university   University            @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  student      Student               @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  scholarship  Scholarship           @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
+  university   University            @relation(fields: [universityId], references: [id], onDelete: Restrict)
   documents    ApplicationDocument[]
   screening    ApplicationScreening?
   reviews      ApplicationReview[]
   disbursement Disbursement?
-  payments     Payment[]
+
 
   // A student can only apply once per scholarship
   @@unique([studentId, scholarshipId], name: "unique_student_scholarship")

@@ -1,0 +1,42 @@
+
+enum SubscriptionPlan {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionPaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model SubscriptionPayment {
+  id           String                    @id @default(uuid(7))
+  universityId String                    @db.VarChar(36)
+  adminId      String                    @db.VarChar(36)
+
+  plan         SubscriptionPlan
+  amount       Float                     @db.DoublePrecision
+  currency     String                    @default("BDT") @db.VarChar(10)
+  status       SubscriptionPaymentStatus @default(PENDING)
+
+  // Stripe Billing Fields
+  stripeInvoiceId  String? @unique @db.VarChar(100)
+  stripePaymentId  String? @unique @db.VarChar(100)
+  stripeCustomerId String? @db.VarChar(100)
+
+  paidAt    DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  admin      Admin      @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([universityId], name: "idx_sub_payment_universityId")
+  @@index([adminId], name: "idx_sub_payment_adminId")
+  @@index([status], name: "idx_sub_payment_status")
+  @@map("subscription_payments")
+}

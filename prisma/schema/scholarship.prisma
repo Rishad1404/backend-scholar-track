@@ -1,26 +1,26 @@
 enum ScholarshipStatus {
-  DRAFT    
-  ACTIVE     
+  DRAFT
+  ACTIVE
   PAUSED
-  CLOSED     
-  CANCELLED  
+  CLOSED
+  CANCELLED
 }
 
 model Scholarship {
-  id           String  @id @default(uuid(7))
-  universityId String  @db.VarChar(36)
-  departmentId String? @db.VarChar(36) 
-  levelId      String? @db.VarChar(36)
-  title                String            @db.VarChar(255)
-  description          String?           @db.Text
-  totalAmount          Float             @db.DoublePrecision
-  amountPerStudent     Float             @db.DoublePrecision 
-  quota                Int               @db.Integer         
-  status               ScholarshipStatus @default(DRAFT)
+  id               String            @id @default(uuid())
+  universityId     String
+  departmentId     String?
+  levelId          String?
+  title            String            @db.VarChar(255)
+  description      String?           @db.Text
+  deadline         DateTime
+  totalAmount      Float             @db.DoublePrecision
+  amountPerStudent Float             @db.DoublePrecision
+  quota            Int               @db.Integer
+  status           ScholarshipStatus @default(DRAFT)
 
-
-  minGpa               Float?  @db.DoublePrecision
-  minCgpa              Float?  @db.DoublePrecision
+  minGpa                Float?  @db.DoublePrecision
+  minCgpa               Float?  @db.DoublePrecision
   financialNeedRequired Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -30,11 +30,12 @@ model Scholarship {
   deletedAt DateTime?
 
   // Relations
-  university   University    @relation(fields: [universityId], references: [id], onDelete: Cascade)
-  department   Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  level        AcademicLevel? @relation(fields: [levelId], references: [id], onDelete: SetNull)
-  applications Application[]
-  payments     Payment[]
+  university       University     @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  department       Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  level            AcademicLevel? @relation(fields: [levelId], references: [id], onDelete: SetNull)
+  applications     Application[]
+  disbursements    Disbursement[]
+  requiredDocTypes DocumentType[]
 
   @@index([isDeleted], name: "idx_scholarship_isDeleted")
   @@index([universityId], name: "idx_scholarship_universityId")

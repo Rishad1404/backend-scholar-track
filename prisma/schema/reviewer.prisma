@@ -1,7 +1,7 @@
 model Reviewer {
-  id           String @id @default(uuid(7))
-  userId       String @unique @db.VarChar(36)
-  universityId String @db.VarChar(36)
+  id           String @id @default(uuid())
+  userId       String @unique 
+  universityId String 
 
   expertise   String? @db.VarChar(255)
   designation String? @db.VarChar(100)
@@ -14,6 +14,7 @@ model Reviewer {
   deletedAt DateTime?
 
   // Relations
+  reviews ApplicationReview[]
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
 

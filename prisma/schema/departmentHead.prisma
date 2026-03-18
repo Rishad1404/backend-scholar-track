@@ -1,8 +1,8 @@
 model DepartmentHead {
-  id           String @id @default(uuid(7))
-  userId       String @unique @db.VarChar(36)
-  universityId String @db.VarChar(36)
-  departmentId String @db.VarChar(36)
+  id           String @id @default(uuid())
+  userId       String @unique 
+  universityId String 
+  departmentId String 
 
   designation String? @db.VarChar(100)
   phone       String? @db.VarChar(20)
@@ -14,6 +14,7 @@ model DepartmentHead {
   deletedAt DateTime?
 
   // Relations
+  screenings ApplicationScreening[]
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
   department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)

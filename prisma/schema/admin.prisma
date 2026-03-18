@@ -1,7 +1,14 @@
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model Admin {
-  id           String @id @default(uuid(7))
-  userId       String @unique @db.VarChar(36)
-  universityId String @db.VarChar(36)
+  id           String @id @default(uuid())
+  userId       String  @unique
+  universityId String 
 
   name        String  @db.VarChar(255) 
   email       String  @db.VarChar(255) 
@@ -10,6 +17,7 @@ model Admin {
   phone       String? @db.VarChar(20)
   designation String? @db.VarChar(100)
 
+  subscriptionStatus SubscriptionStatus @default(INACTIVE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -18,7 +26,9 @@ model Admin {
 
   // Relations
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  university University @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  subscriptionPayments SubscriptionPayment[]
+  approvedDisbursements Disbursement[]
 
   @@index([isDeleted], name: "idx_admin_isDeleted")
   @@index([universityId], name: "idx_admin_universityId")

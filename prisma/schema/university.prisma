@@ -1,15 +1,20 @@
+enum UniversityStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+}
+
 model University {
-  id           String  @id @default(uuid(7))
-  name         String  @db.VarChar(255)
-  logoUrl      String? @db.VarChar(500)
-  logoPublicId String? @db.VarChar(255) // Cloudinary public_id for deletion
-  website      String? @db.VarChar(500)
-  isApproved   Boolean @default(false)
-  isSuspended  Boolean @default(false)
+  id           String           @id @default(uuid())
+  name         String           @db.VarChar(255)
+  logoUrl      String?
+  logoPublicId String? 
+  website      String?          @db.VarChar(500)
+  status       UniversityStatus @default(PENDING)
 
   // Stripe
-  stripeCustomerId String? @db.VarChar(100)
-  subscriptionId   String? @db.VarChar(100)
+  stripeCustomerId String?
+  subscriptionId   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -18,17 +23,18 @@ model University {
   deletedAt DateTime?
 
   // Relations
-  admins          Admin[]
-  departments     Department[]
-  academicLevels  AcademicLevel[]
-  academicTerms   AcademicTerm[]
-  scholarships    Scholarship[]
-  students        Student[]
-  departmentHeads DepartmentHead[]
-  reviewers       Reviewer[]
-  payments        Payment[]
-  invites         Invite[]
-  applications    Application[]
+  admins               Admin[]
+  departments          Department[]
+  academicLevels       AcademicLevel[]
+  academicTerms        AcademicTerm[]
+  scholarships         Scholarship[]
+  students             Student[]
+  departmentHeads      DepartmentHead[]
+  reviewers            Reviewer[]
+  subscriptionPayments SubscriptionPayment[]
+  disbursements        Disbursement[]
+  invites              Invite[]
+  applications         Application[]
 
   @@index([isDeleted], name: "idx_university_isDeleted")
   @@index([name], name: "idx_university_name")

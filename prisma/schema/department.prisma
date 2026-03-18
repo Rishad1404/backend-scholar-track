@@ -1,6 +1,6 @@
 model Department {
-  id           String @id @default(uuid(7))
-  universityId String @db.VarChar(36)
+  id           String @id @default(uuid())
+  universityId String 
   name         String @db.VarChar(255)
 
   createdAt DateTime @default(now())
