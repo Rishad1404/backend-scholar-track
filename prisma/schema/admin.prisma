@@ -3,7 +3,10 @@ model Admin {
   userId       String @unique @db.VarChar(36)
   universityId String @db.VarChar(36)
 
-  isOwner     Boolean @default(false) 
+  name        String  @db.VarChar(255) 
+  email       String  @db.VarChar(255) 
+  profilePhoto String? @db.VarChar(500)
+  isOwner     Boolean @default(false)
   phone       String? @db.VarChar(20)
   designation String? @db.VarChar(100)
 
@@ -17,7 +20,8 @@ model Admin {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
 
-  @@index([isDeleted], name: "idx_admin_profile_isDeleted")
-  @@index([universityId], name: "idx_admin_profile_universityId")
+  @@index([isDeleted], name: "idx_admin_isDeleted")
+  @@index([universityId], name: "idx_admin_universityId")
+  @@index([email], name: "idx_admin_email")
   @@map("admins")
 }
