@@ -7,7 +7,7 @@ import { validateRequest } from "../../middleware/validateRequest";
 const router = Router();
 
 router.post(
-  "/register/admin",
+  "/create-university-admin",
   validateRequest(registerUniversityAdminSchema),
   UserController.registerUniversityAdmin
 );
