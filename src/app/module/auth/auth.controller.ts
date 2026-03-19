@@ -47,7 +47,19 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getMe = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  const result=await AuthService.getMe(user);
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: "User fetched successfully",
+    data: result,
+  });
+});
+
 export const AuthController = {
   registerStudent,
   loginUser,
+  getMe
 };

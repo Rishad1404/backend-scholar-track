@@ -97,8 +97,6 @@ export const checkAuth =
         envVars.ACCESS_TOKEN_SECRET as string,
       );
 
-      console.log(verifiedToken);
-
       if (!verifiedToken.success) {
         throw new AppError(
           status.UNAUTHORIZED,
