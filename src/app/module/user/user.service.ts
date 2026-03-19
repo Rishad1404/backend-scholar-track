@@ -1,13 +1,9 @@
-
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
 import { TRegisterUniversityAdminPayload } from "./user.validation";
 
-const registerUniversityAdmin = async (
-  payload: TRegisterUniversityAdminPayload
-) => {
-  const { name, email, password, universityName, website, phone, designation } =
-    payload;
+const registerUniversityAdmin = async (payload: TRegisterUniversityAdminPayload) => {
+  const { name, email, password, universityName, website, phone, designation } = payload;
 
   // 1. Check if email already exists
   const existingUser = await prisma.user.findUnique({
