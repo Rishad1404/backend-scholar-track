@@ -1,10 +1,15 @@
+enum InviteRole {
+  DEPARTMENT_HEAD
+  COMMITTEE_REVIEWER
+}
+
 model Invite {
   id              String @id @default(uuid())
   universityId    String 
-  invitedByUserId String  // which admin sent this invite
+  invitedByUserId String  
 
   email String @db.VarChar(255)
-  role  Role // UNIVERSITY_ADMIN, DEPARTMENT_HEAD, or COMMITTEE_REVIEWER
+  role  InviteRole
 
   // For DEPARTMENT_HEAD invites — which department they're assigned to
   departmentId String? 

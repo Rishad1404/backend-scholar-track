@@ -40,8 +40,22 @@ const updateAdmin = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const addAdminToUniversity = catchAsync(
+  async (req: Request, res: Response) => {
+    const { userId, role } = req.user;
+    const result = await AdminService.addAdminToUniversity(userId, role, req.body);
+    sendResponse(res, {
+      httpStatusCode: status.CREATED,
+      success: true,
+      message: "Admin added to university successfully",
+      data: result,
+    });
+  }
+);
+
 export const AdminController = {
   getAllAdmins,
   getAdminById,
-  updateAdmin
+  updateAdmin,
+  addAdminToUniversity
 };

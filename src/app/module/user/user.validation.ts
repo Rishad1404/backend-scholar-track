@@ -4,18 +4,16 @@ export const registerUniversityAdminSchema = z.object({
   // Admin personal info
   name: z
     .string("Name is required")
-    .min(2, "Name must be at least 2 characters")
+    .min(5, "Name must be at least 5 characters")
     .max(100),
   email: z.email("Invalid email address"),
   password: z
     .string("Password is required")
-    .min(8, "Password must be at least 8 characters")
-    // .regex(
-    //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-    //   "Password must contain uppercase, lowercase and a number",
-    // )
-    ,
-
+    .min(8, "Password must be at least 8 characters"),
+  // .regex(
+  //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+  //   "Password must contain uppercase, lowercase and a number",
+  // )
   // University info
   universityName: z
     .string("University name is required")
@@ -31,6 +29,8 @@ export const registerUniversityAdminSchema = z.object({
 
   designation: z.string().max(100).optional(),
 });
+
 export type TRegisterUniversityAdminPayload = z.infer<
   typeof registerUniversityAdminSchema
 >;
+

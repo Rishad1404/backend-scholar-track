@@ -2,7 +2,8 @@ import status from "http-status";
 import { Role } from "../../../generated/prisma/enums";
 import AppError from "../../errorHelpers/AppError";
 import { prisma } from "../../lib/prisma";
-import { TUpdateAdminPayload } from "./admin.validation";
+import { TAddAdminToUniversityPayload, TUpdateAdminPayload } from "./admin.validation";
+import { auth } from "../../lib/auth";
 
 const getAllAdmins = async (userId: string, role: string) => {
   // Super Admin → return ALL admins
@@ -125,12 +126,11 @@ const getAdminById = async (userId: string, role: string, adminId: string) => {
   return admin;
 };
 
-
 const updateAdmin = async (
   userId: string,
   role: string,
   adminId: string,
-  payload: TUpdateAdminPayload
+  payload: TUpdateAdminPayload,
 ) => {
   const adminData = payload.admin;
 
@@ -160,17 +160,26 @@ const updateAdmin = async (
     }
 
     if (currentAdmin.universityId !== targetAdmin.universityId) {
-      throw new AppError(status.FORBIDDEN, "You don't have permission to update this admin");
+      throw new AppError(
+        status.FORBIDDEN,
+        "You don't have permission to update this admin",
+      );
     }
 
     const isSelf = currentAdmin.id === targetAdmin.id;
 
     if (!isSelf && !currentAdmin.isOwner) {
-      throw new AppError(status.FORBIDDEN, "Only the owner admin can update other admins");
+      throw new AppError(
+        status.FORBIDDEN,
+        "Only the owner admin can update other admins",
+      );
     }
 
     if (!currentAdmin.isOwner && adminData.isOwner !== undefined) {
-      throw new AppError(status.FORBIDDEN, "You don't have permission to change ownership");
+      throw new AppError(
+        status.FORBIDDEN,
+        "You don't have permission to change ownership",
+      );
     }
   }
 
@@ -183,6 +192,7 @@ const updateAdmin = async (
       where: { id: adminId },
       data: {
         ...adminFields,
+        ...(name && {name}),
       },
       include: {
         user: {
@@ -217,8 +227,94 @@ const updateAdmin = async (
   return result;
 };
 
+
+const addAdminToUniversity = async (
+  userId: string,
+  role: string,
+  payload: TAddAdminToUniversityPayload
+) => {
+  const { name, email, password, phone, designation } = payload;
+
+  // 1. Find current admin to get universityId
+  const currentAdmin = await prisma.admin.findUnique({
+    where: { userId },
+  });
+
+  if (!currentAdmin) {
+    throw new AppError(status.NOT_FOUND, "Admin profile not found");
+  }
+
+  // 2. Only Owner Admin or Super Admin can add admins
+  if (role !== Role.SUPER_ADMIN && !currentAdmin.isOwner) {
+    throw new AppError(
+      status.FORBIDDEN,
+      "Only the owner admin can add new admins"
+    );
+  }
+
+  // 3. Check if email already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    throw new AppError(status.CONFLICT, "Email already registered");
+  }
+
+  // 4. Create User via better-auth
+  const data = await auth.api.signUpEmail({
+    body: {
+      name,
+      email,
+      password,
+      role: "UNIVERSITY_ADMIN",
+    },
+  });
+
+  if (!data.user) {
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to create user"
+    );
+  }
+
+  // 5. Create Admin profile (same university, NOT owner)
+  const admin = await prisma.admin.create({
+    data: {
+      userId: data.user.id,
+      universityId: currentAdmin.universityId,
+      name,
+      email,
+      phone,
+      designation,
+      isOwner: false, 
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          status: true,
+        },
+      },
+      university: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  return admin;
+};
+
 export const AdminService = {
   getAllAdmins,
   getAdminById,
   updateAdmin,
+  addAdminToUniversity
 };
