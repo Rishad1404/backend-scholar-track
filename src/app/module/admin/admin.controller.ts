@@ -3,6 +3,7 @@ import { catchAsync } from "../../shared/catchAsync";
 import { sendResponse } from "../../shared/sendResponse";
 import { AdminService } from "./admin.service";
 import status from "http-status";
+import { IRequestUser } from "../../interfaces/requestUser.interface";
 
 const getAllAdmins = catchAsync(async (req: Request, res: Response) => {
   const {userId,role}=req.user
@@ -53,9 +54,30 @@ const addAdminToUniversity = catchAsync(
   }
 );
 
+const deleteAdmin = catchAsync(async (req: Request, res: Response) => {
+  const { adminId } = req.params;
+
+  // adjust based on your checkAuth payload:
+  const requestUser = {
+    userId: req.user.userId,
+    role: req.user.role
+  };
+
+  const result = await AdminService.deleteAdmin(adminId as string, requestUser as IRequestUser);
+
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: "Admin deleted successfully",
+    data: result,
+  });
+});
+
+
 export const AdminController = {
   getAllAdmins,
   getAdminById,
   updateAdmin,
-  addAdminToUniversity
+  addAdminToUniversity,
+  deleteAdmin
 };

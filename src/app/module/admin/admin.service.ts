@@ -1,9 +1,10 @@
 import status from "http-status";
-import { Role } from "../../../generated/prisma/enums";
+import { Role, UserStatus } from "../../../generated/prisma/enums";
 import AppError from "../../errorHelpers/AppError";
 import { prisma } from "../../lib/prisma";
 import { TAddAdminToUniversityPayload, TUpdateAdminPayload } from "./admin.validation";
 import { auth } from "../../lib/auth";
+import { IRequestUser } from "../../interfaces/requestUser.interface";
 
 const getAllAdmins = async (userId: string, role: string) => {
   // Super Admin → return ALL admins
@@ -192,7 +193,7 @@ const updateAdmin = async (
       where: { id: adminId },
       data: {
         ...adminFields,
-        ...(name && {name}),
+        ...(name && { name }),
       },
       include: {
         user: {
@@ -227,11 +228,10 @@ const updateAdmin = async (
   return result;
 };
 
-
 const addAdminToUniversity = async (
   userId: string,
   role: string,
-  payload: TAddAdminToUniversityPayload
+  payload: TAddAdminToUniversityPayload,
 ) => {
   const { name, email, password, phone, designation } = payload;
 
@@ -246,10 +246,7 @@ const addAdminToUniversity = async (
 
   // 2. Only Owner Admin or Super Admin can add admins
   if (role !== Role.SUPER_ADMIN && !currentAdmin.isOwner) {
-    throw new AppError(
-      status.FORBIDDEN,
-      "Only the owner admin can add new admins"
-    );
+    throw new AppError(status.FORBIDDEN, "Only the owner admin can add new admins");
   }
 
   // 3. Check if email already exists
@@ -272,10 +269,7 @@ const addAdminToUniversity = async (
   });
 
   if (!data.user) {
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      "Failed to create user"
-    );
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create user");
   }
 
   // 5. Create Admin profile (same university, NOT owner)
@@ -287,7 +281,7 @@ const addAdminToUniversity = async (
       email,
       phone,
       designation,
-      isOwner: false, 
+      isOwner: false,
     },
     include: {
       user: {
@@ -312,9 +306,115 @@ const addAdminToUniversity = async (
   return admin;
 };
 
+const deleteAdmin = async (adminId: string, requestUser: IRequestUser) => {
+  // 1) Find target admin (must exist and not deleted)
+  const targetAdmin = await prisma.admin.findFirst({
+    where: { id: adminId, isDeleted: false },
+  });
+
+  if (!targetAdmin) {
+    throw new AppError(status.NOT_FOUND, "Admin not found");
+  }
+
+  // 2) Permission checks
+  if (requestUser.role === Role.UNIVERSITY_ADMIN) {
+    const requestingAdmin = await prisma.admin.findFirst({
+      where: { userId: requestUser.userId, isDeleted: false },
+    });
+
+    if (!requestingAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    const isSelf = targetAdmin.userId === requestUser.userId;
+
+    // Non-owner can only delete themselves
+    if (!requestingAdmin.isOwner && !isSelf) {
+      throw new AppError(status.FORBIDDEN, "You do not have permission to delete admins");
+    }
+
+    // Owner deleting others must be same university
+    if (requestingAdmin.isOwner && !isSelf) {
+      if (requestingAdmin.universityId !== targetAdmin.universityId) {
+        throw new AppError(
+          status.FORBIDDEN,
+          "You can only delete admins from your own university",
+        );
+      }
+
+      // Owner cannot delete another owner (business rule)
+      if (targetAdmin.isOwner) {
+        throw new AppError(status.FORBIDDEN, "You cannot delete another owner admin");
+      }
+    }
+  } else if (requestUser.role === Role.SUPER_ADMIN) {
+    // Optional rule:
+    // If you want to prevent SUPER_ADMIN from deleting owner admins:
+    // if (targetAdmin.isOwner) throw new AppError(status.FORBIDDEN, "Cannot delete owner admin");
+  } else {
+    throw new AppError(status.FORBIDDEN, "You are not allowed to delete admins");
+  }
+
+  // 3) Soft delete Admin + User, and kill sessions (transaction)
+  const result = await prisma.$transaction(async (tx) => {
+    const deletedAdmin = await tx.admin.update({
+      where: { id: adminId },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    });
+
+    await tx.user.update({
+      where: { id: targetAdmin.userId },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        status: UserStatus.DELETED,
+      },
+    });
+
+    // Kill sessions so they get logged out immediately
+    await tx.session.deleteMany({
+      where: { userId: targetAdmin.userId },
+    });
+
+    // Recommended: DON'T delete accounts for soft delete.
+    // If you insist, uncomment:
+    // await tx.account.deleteMany({ where: { userId: targetAdmin.userId } });
+
+    // Return enriched data
+    const adminWithDetails = await tx.admin.findUnique({
+      where: { id: deletedAdmin.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            status: true,
+            isDeleted: true,
+          },
+        },
+        university: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return adminWithDetails;
+  });
+
+  return result;
+};
+
 export const AdminService = {
   getAllAdmins,
   getAdminById,
   updateAdmin,
-  addAdminToUniversity
+  addAdminToUniversity,
+  deleteAdmin
 };
