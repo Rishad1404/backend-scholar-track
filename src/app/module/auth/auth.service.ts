@@ -8,13 +8,8 @@ import { tokenUtils } from "../../utils/token";
 import { jwtUtils } from "../../utils/jwt";
 import { envVars } from "../../../config/env";
 import { JwtPayload } from "jsonwebtoken";
-import { IChangePasswordPayload, ILoginUserPayload } from "./auth.interface";
+import { IChangePasswordPayload, ILoginUserPayload, IRegisterStudentPayload } from "./auth.interface";
 
-interface IRegisterStudentPayload {
-  name: string;
-  email: string;
-  password: string;
-}
 
 const registerStudent = async (payload: IRegisterStudentPayload) => {
   const { name, email, password } = payload;

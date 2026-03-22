@@ -16,6 +16,14 @@ interface EnvConfig {
   REFRESH_TOKEN_EXPIRES_IN: string;
   BETTER_AUTH_SESSION_TOKEN_EXPIRES_IN: string;
   BETTER_AUTH_SESSION_TOKEN_UPDATE_IN: string;
+  FRONTEND_URL: string;
+    EMAIL_SENDER:{
+    SMTP_HOST: string;
+    SMTP_PORT: string;
+    SMTP_USER: string;
+    SMTP_PASSWORD: string;
+    SMTP_FROM: string;
+  }
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -23,6 +31,7 @@ const loadEnvVariables = (): EnvConfig => {
     "NODE_ENV",
     "PORT",
     "DATABASE_URL",
+    "FRONTEND_URL",
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
     "ACCESS_TOKEN_SECRET",
@@ -31,6 +40,11 @@ const loadEnvVariables = (): EnvConfig => {
     "REFRESH_TOKEN_EXPIRES_IN",
     "BETTER_AUTH_SESSION_TOKEN_EXPIRES_IN",
     "BETTER_AUTH_SESSION_TOKEN_UPDATE_IN",
+    "EMAIL_SENDER_SMTP_HOST",
+    "EMAIL_SENDER_SMTP_PORT",
+    "EMAIL_SENDER_SMTP_USER",
+    "EMAIL_SENDER_SMTP_PASSWORD",
+    "EMAIL_SENDER_SMTP_FROM",
   ];
 
   requireEnvVariables.forEach((variable) => {
@@ -55,6 +69,14 @@ const loadEnvVariables = (): EnvConfig => {
       .BETTER_AUTH_SESSION_TOKEN_EXPIRES_IN as string,
     BETTER_AUTH_SESSION_TOKEN_UPDATE_IN: process.env
       .BETTER_AUTH_SESSION_TOKEN_UPDATE_IN as string,
+    FRONTEND_URL: process.env.FRONTEND_URL as string,
+    EMAIL_SENDER: {
+      SMTP_HOST: process.env.EMAIL_SENDER_SMTP_HOST as string,
+      SMTP_PORT: process.env.EMAIL_SENDER_SMTP_PORT as string,
+      SMTP_USER: process.env.EMAIL_SENDER_SMTP_USER as string,
+      SMTP_PASSWORD: process.env.EMAIL_SENDER_SMTP_PASSWORD as string,
+      SMTP_FROM: process.env.EMAIL_SENDER_SMTP_FROM as string
+    }
   };
 };
 
