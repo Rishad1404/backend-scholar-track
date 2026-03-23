@@ -9,7 +9,7 @@ const router = Router();
 
 router.get("/", DepartmentController.getAllDepartments);
 
-router.get("/:universityId", DepartmentController.getDepartmentsByUniversityId);
+router.get("/university/:universityId", DepartmentController.getDepartmentsByUniversityId);
 
 router.get("/:departmentId", DepartmentController.getDepartmentById);
 
