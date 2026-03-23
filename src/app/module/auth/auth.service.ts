@@ -15,6 +15,23 @@ import {
   IRegisterStudentPayload,
 } from "./auth.interface";
 
+
+const checkIsCredentialUser = async (email: string) => {
+  const account = await prisma.account.findFirst({
+    where: {
+      user: { email },
+      providerId: "credential",
+    },
+  });
+
+  if (!account) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "This account uses Google sign-in. Password operations are not available."
+    );
+  }
+};
+
 const registerStudent = async (payload: IRegisterStudentPayload) => {
   const { name, email, password } = payload;
 
@@ -236,6 +253,8 @@ const changePassword = async (payload: IChangePasswordPayload, sessionToken: str
     throw new AppError(status.UNAUTHORIZED, "Invalid session token");
   }
 
+  await checkIsCredentialUser(session.user.email);
+
   const { currentPassword, newPassword } = payload;
 
   const result = await auth.api.changePassword({
@@ -298,6 +317,7 @@ const logOutUser = async (sessionToken: string) => {
 };
 
 const verifyEmail = async (email: string, otp: string) => {
+  await checkIsCredentialUser(email);
   const result = await auth.api.verifyEmailOTP({
     body: {
       email,
@@ -325,6 +345,7 @@ const forgetPassword = async (email: string) => {
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, "User not found");
   }
+  await checkIsCredentialUser(email);
   if (!isUserExists.emailVerified) {
     throw new AppError(status.BAD_REQUEST, "Email is not verified");
   }
@@ -346,6 +367,7 @@ const resetPassword = async (email: string, otp: string, newPassword: string) =>
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, "User not found");
   }
+  await checkIsCredentialUser(email);
   if (!isUserExists.emailVerified) {
     throw new AppError(status.BAD_REQUEST, "Email is not verified");
   }
