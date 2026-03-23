@@ -6,6 +6,7 @@ import { UserRoutes } from "../module/user/user.route";
 import { AdminRoutes } from "../module/admin/admin.route";
 import { DepartmentRoutes } from "../module/department/department.route";
 import { InviteRoutes } from "../module/invite/invite.route";
+import { DepartmentHeadRoutes } from "../module/department-head/deptHead.route";
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use("/admins", AdminRoutes);
 router.use('/academic-level',AcademicLevelRoutes);
 router.use('/academic-term',AcademicTermRoutes);
 router.use("/departments", DepartmentRoutes);
+router.use("/department-heads", DepartmentHeadRoutes);
 router.use("/invites", InviteRoutes);
 
 export const IndexRoutes = router;
