@@ -18,5 +18,7 @@ router.post("/refresh-token",AuthController.getNewToken)
 router.post("/change-password",checkAuth(Role.COMMITTEE_REVIEWER,Role.DEPARTMENT_HEAD,Role.UNIVERSITY_ADMIN,Role.SUPER_ADMIN,Role.STUDENT),AuthController.changePassword)
 router.post("/logout",checkAuth(Role.COMMITTEE_REVIEWER,Role.DEPARTMENT_HEAD,Role.UNIVERSITY_ADMIN,Role.SUPER_ADMIN,Role.STUDENT),AuthController.logOutUser)
 router.post("/verify-email",AuthController.verifyEmail)
+router.post("/forget-password",AuthController.forgetPassword)
+router.post("/reset-password",AuthController.resetPassword)
 
 export const AuthRoutes=router
