@@ -19,4 +19,27 @@ export const addDepartmentHeadSchema = z.object({
   designation: z.string().max(100).optional(),
 });
 
+export const updateDepartmentHeadSchema = z.object({
+  departmentHead: z
+    .object({
+      phone: z
+        .string("Phone is required")
+        .min(11)
+        .max(15)
+        .optional(),
+      designation: z
+        .string("Designation is required")
+        .max(100)
+        .optional(),
+      name: z
+        .string("Name is required")
+        .min(2)
+        .max(100)
+        .optional(),
+    })
+    .optional(),
+});
+
+
+export type TUpdateDepartmentHeadPayload = z.infer<typeof updateDepartmentHeadSchema>;
 export type TAddDepartmentHeadPayload = z.infer<typeof addDepartmentHeadSchema>;

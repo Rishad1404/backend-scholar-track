@@ -67,7 +67,7 @@
             background: #ffffff;
             border-radius: 0 0 16px 16px;
             padding: 44px 40px 36px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
         }
 
         .greeting {
@@ -139,9 +139,9 @@
         }
 
         .info-icon.purple { background: #EEEDFE; }
-        .info-icon.teal { background: #E1F5EE; }
-        .info-icon.blue { background: #EFF6FF; }
-        .info-icon.rose { background: #FFE4E6; }
+        .info-icon.teal   { background: #E1F5EE; }
+        .info-icon.blue   { background: #EFF6FF; }
+        .info-icon.rose   { background: #FFE4E6; }
 
         .info-content {
             width: 100%;
@@ -202,9 +202,28 @@
             position: absolute;
             left: 0;
             top: 0;
-            color: #0F6E56;
+            color: #0F6E56; /* Matches your brand green */
             font-weight: bold;
             font-size: 16px;
+        }
+
+        /* ── Warning box ── */
+        .warning-box {
+            background: #fff7ed;
+            border-left: 3px solid #f97316;
+            border-radius: 0 8px 8px 0;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+        }
+
+        .warning-box p {
+            font-size: 13px;
+            color: #92400e;
+            line-height: 1.5;
+        }
+
+        .warning-box p strong {
+            color: #c2410c;
         }
 
         /* ── CTA Button ── */
@@ -234,32 +253,6 @@
         .cta-subtext a {
             color: #3C3489;
             word-break: break-all;
-        }
-
-        /* ── Divider ── */
-        .divider {
-            border: none;
-            border-top: 1px solid #f3f4f6;
-            margin: 24px 0;
-        }
-
-        /* ── Warning box ── */
-        .warning-box {
-            background: #fff7ed;
-            border-left: 3px solid #f97316;
-            border-radius: 0 8px 8px 0;
-            padding: 14px 16px;
-            margin-bottom: 24px;
-        }
-
-        .warning-box p {
-            font-size: 13px;
-            color: #92400e;
-            line-height: 1.5;
-        }
-
-        .warning-box p strong {
-            color: #c2410c;
         }
 
         /* ── Footer ── */
@@ -329,7 +322,7 @@
             <p class="greeting">Welcome, <%= name %>! 👋</p>
             <p class="subtext">
                 <strong><%= addedByName %></strong> has created a ScholarTrack account for you as a
-                <span class="role-badge">Department Head</span>
+                <span class="role-badge">Committee Reviewer</span>
             </p>
 
             <div class="info-box">
@@ -343,10 +336,10 @@
                 </div>
 
                 <div class="info-row">
-                    <div class="info-icon teal">📚</div>
+                    <div class="info-icon teal">📋</div>
                     <div class="info-content">
-                        <div class="info-label">Department</div>
-                        <div class="info-value"><%= departmentName %></div>
+                        <div class="info-label">Your Role</div>
+                        <div class="info-value">Committee Reviewer</div>
                     </div>
                 </div>
 
@@ -368,18 +361,17 @@
 
             </div>
 
-            <div class="section-title">As a Department Head, your responsibilities include:</div>
+            <div class="section-title">As a Committee Reviewer, your responsibilities include:</div>
             <ul class="feature-list">
-                <li>Verify academic standing and eligibility of students in your department</li>
-                <li>Review and approve initial scholarship applications</li>
-                <li>Forward qualified candidates to the final review committee</li>
-                <li>Monitor department-specific scholarship allocations</li>
+                <li>Review scholarship applications across all departments</li>
+                <li>Score applicants using a structured rubric</li>
+                <li>View AI-generated eligibility scores</li>
+                <li>Add detailed evaluation notes</li>
             </ul>
 
             <div class="warning-box">
                 <p>
-                    ⚠️ <strong>Security Notice:</strong> You will be required to change your temporary password
-                    immediately upon your first login to secure your account.
+                    ⚠️ <strong>Security Notice:</strong> You will be required to change your temporary password immediately upon your first login to secure your account.
                 </p>
             </div>
 

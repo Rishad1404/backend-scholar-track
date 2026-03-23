@@ -2,7 +2,10 @@ import AppError from "../../errorHelpers/AppError";
 import status from "http-status";
 import { sendEmail } from "../../utils/email";
 import { envVars } from "../../../config/env";
-import { TAddDepartmentHeadPayload } from "./deptHead.validation";
+import {
+  TAddDepartmentHeadPayload,
+  TUpdateDepartmentHeadPayload,
+} from "./deptHead.validation";
 import { Role } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { auth } from "../../lib/auth";
@@ -282,8 +285,149 @@ const deleteDepartmentHead = async (userId: string, role: string, deptHeadId: st
   return result;
 };
 
+const getDepartmentHeadById = async (
+  userId: string,
+  role: string,
+  deptHeadId: string,
+) => {
+  const deptHead = await prisma.departmentHead.findFirst({
+    where: { id: deptHeadId, isDeleted: false },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          status: true,
+        },
+      },
+      university: {
+        select: { id: true, name: true },
+      },
+      department: {
+        select: { id: true, name: true },
+      },
+    },
+  });
+
+  if (!deptHead) {
+    throw new AppError(status.NOT_FOUND, "Department Head not found");
+  }
+
+  if (role !== Role.SUPER_ADMIN) {
+    const currentAdmin = await prisma.admin.findFirst({
+      where: { userId, isDeleted: false },
+    });
+
+    if (!currentAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    if (deptHead.universityId !== currentAdmin.universityId) {
+      throw new AppError(
+        status.FORBIDDEN,
+        "You don't have permission to view this department head",
+      );
+    }
+  }
+
+  return deptHead;
+};
+
+const updateDepartmentHead = async (
+  userId: string,
+  role: string,
+  deptHeadId: string,
+  payload: TUpdateDepartmentHeadPayload,
+) => {
+  const deptHeadData = payload.departmentHead;
+
+  if (!deptHeadData) {
+    throw new AppError(status.BAD_REQUEST, "No data provided to update");
+  }
+
+  const deptHead = await prisma.departmentHead.findFirst({
+    where: { id: deptHeadId, isDeleted: false },
+  });
+
+  if (!deptHead) {
+    throw new AppError(status.NOT_FOUND, "Department Head not found");
+  }
+
+  // Permission check
+  if (role !== Role.SUPER_ADMIN) {
+    const currentAdmin = await prisma.admin.findFirst({
+      where: { userId, isDeleted: false },
+    });
+
+    if (!currentAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    // Owner admin OR the dept head themselves can update
+    const isSelf = deptHead.userId === userId;
+
+    if (!currentAdmin.isOwner && !isSelf) {
+      throw new AppError(
+        status.FORBIDDEN,
+        "You don't have permission to update this department head",
+      );
+    }
+
+    if (currentAdmin.isOwner && deptHead.universityId !== currentAdmin.universityId) {
+      throw new AppError(
+        status.FORBIDDEN,
+        "You can only update department heads from your university",
+      );
+    }
+  }
+
+  // Separate User fields and DeptHead fields
+  const { name, ...deptHeadFields } = deptHeadData;
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedDeptHead = await tx.departmentHead.update({
+      where: { id: deptHeadId },
+      data: {
+        ...deptHeadFields,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            status: true,
+          },
+        },
+        university: {
+          select: { id: true, name: true },
+        },
+        department: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (name) {
+      await tx.user.update({
+        where: { id: deptHead.userId },
+        data: { name },
+      });
+    }
+
+    return updatedDeptHead;
+  });
+
+  return result;
+};
+
 export const DepartmentHeadService = {
   addDepartmentHead,
   getAllDepartmentHeads,
+  getDepartmentHeadById,
+  updateDepartmentHead,
   deleteDepartmentHead,
 };
