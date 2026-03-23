@@ -39,7 +39,7 @@ const registerStudent = async (payload: IRegisterStudentPayload) => {
       return studentTx;
     });
 
-      const accessToken=tokenUtils.getAccessToken({
+    const accessToken=tokenUtils.getAccessToken({
     userId: data.user.id,
     role: data.user.role,
     name: data.user.name,
@@ -298,6 +298,27 @@ const logOutUser = async (sessionToken: string) => {
   return result;
 };
 
+const verifyEmail = async (email: string, otp: string) => {
+  const result = await auth.api.verifyEmailOTP({
+    body: {
+      email,
+      otp,
+    },
+  });
+
+  if (result.status && !result.user.emailVerified) {
+    await prisma.user.update({
+      where: {
+        email,
+      },
+      data: {
+        emailVerified: true,
+      },
+    });
+  }
+  return result;
+};
+
 
 export const AuthService = {
   registerStudent,
@@ -305,5 +326,6 @@ export const AuthService = {
   getMe,
   getNewToken,
   changePassword,
-  logOutUser
+  logOutUser,
+  verifyEmail
 };
