@@ -9,6 +9,14 @@ import crypto from "crypto";
 import { prisma } from "../../lib/prisma";
 import { InviteRole, Role } from "../../../generated/prisma/enums";
 import { auth } from "../../lib/auth";
+import { IQueryParams } from "../../interfaces/query.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { Invite, Prisma } from "../../../generated/prisma/client";
+import {
+  inviteFilterableFields,
+  inviteIncludeConfig,
+  inviteSearchableFields,
+} from "./invite.constant";
 
 const sendInvite = async (userId: string, role: string, payload: TSendInvitePayload) => {
   const { email, role: inviteRole, departmentId } = payload;
@@ -272,41 +280,40 @@ const acceptInvite = async (payload: TAcceptInvitePayload) => {
   return result;
 };
 
-const getAllInvites = async (userId: string, role: string) => {
-  if (role === Role.SUPER_ADMIN) {
-    return await prisma.invite.findMany({
-      where: { isDeleted: false },
-      include: {
-        university: { select: { id: true, name: true } },
-        department: { select: { id: true, name: true } },
-        invitedBy: { select: { id: true, name: true, email: true } },
-      },
-      orderBy: { createdAt: "desc" },
+const getAllInvites = async (userId: string, role: string, query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder<
+    Invite,
+    Prisma.InviteWhereInput,
+    Prisma.InviteInclude
+  >(prisma.invite, query, {
+    searchableFields: inviteSearchableFields,
+    filterableFields: inviteFilterableFields,
+  });
+
+  if (role === Role.UNIVERSITY_ADMIN) {
+    const currentAdmin = await prisma.admin.findFirst({
+      where: { userId, isDeleted: false },
     });
+
+    if (!currentAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    queryBuilder.where({ universityId: currentAdmin.universityId });
   }
 
-  const currentAdmin = await prisma.admin.findFirst({
-    where: { userId, isDeleted: false },
-  });
+  const result = await queryBuilder
+    .search()
+    .filter()
+    .where({ isDeleted: false })
+    .dynamicInclude(inviteIncludeConfig)
+    .paginate()
+    .sort()
+    .fields()
+    .execute();
 
-  if (!currentAdmin) {
-    throw new AppError(status.NOT_FOUND, "Admin profile not found");
-  }
-
-  return await prisma.invite.findMany({
-    where: {
-      universityId: currentAdmin.universityId,
-      isDeleted: false,
-    },
-    include: {
-      university: { select: { id: true, name: true } },
-      department: { select: { id: true, name: true } },
-      invitedBy: { select: { id: true, name: true, email: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  return result;
 };
-
 const cancelInvite = async (userId: string, role: string, inviteId: string) => {
   const invite = await prisma.invite.findFirst({
     where: { id: inviteId, isDeleted: false },

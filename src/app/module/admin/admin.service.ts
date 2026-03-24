@@ -5,75 +5,52 @@ import { prisma } from "../../lib/prisma";
 import { TAddAdminToUniversityPayload, TUpdateAdminPayload } from "./admin.validation";
 import { auth } from "../../lib/auth";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
+import { IQueryParams } from "../../interfaces/query.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { Admin, Prisma } from "../../../generated/prisma/client";
+import {
+  adminFilterableFields,
+  adminIncludeConfig,
+  adminSearchableFields,
+} from "./admin.constant";
 
-const getAllAdmins = async (userId: string, role: string) => {
-  // Super Admin → return ALL admins
-  if (role === Role.SUPER_ADMIN) {
-    const admins = await prisma.admin.findMany({
-      where: { isDeleted: false },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            status: true,
-            emailVerified: true,
-          },
-        },
-        university: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
+const getAllAdmins = async (userId: string, role: string, query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder<
+    Admin,
+    Prisma.AdminWhereInput,
+    Prisma.AdminInclude
+  >(prisma.admin, query, {
+    searchableFields: adminSearchableFields,
+    filterableFields: adminFilterableFields,
+  });
+
+
+  if (role === Role.UNIVERSITY_ADMIN) {
+    const currentAdmin = await prisma.admin.findUnique({
+      where: { userId },
     });
 
-    return admins;
+    if (!currentAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    
+    queryBuilder.where({ universityId: currentAdmin.universityId });
   }
 
-  // University Admin → return only their university's admins
-  const currentAdmin = await prisma.admin.findUnique({
-    where: { userId },
-  });
+  const result = await queryBuilder
+    .search()
+    .filter()
+    .where({ isDeleted: false })
+    .dynamicInclude(adminIncludeConfig)
+    .paginate()
+    .sort()
+    .fields()
+    .execute();
 
-  if (!currentAdmin) {
-    throw new Error("Admin profile not found");
-  }
-
-  const admins = await prisma.admin.findMany({
-    where: {
-      universityId: currentAdmin.universityId,
-      isDeleted: false,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          status: true,
-          emailVerified: true,
-        },
-      },
-      university: {
-        select: {
-          id: true,
-          name: true,
-          status: true,
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return admins;
+  return result;
 };
+
 
 const getAdminById = async (userId: string, role: string, adminId: string) => {
   const admin = await prisma.admin.findUnique({
@@ -139,7 +116,6 @@ const updateAdmin = async (
     throw new AppError(status.BAD_REQUEST, "No data provided to update");
   }
 
-  // 1. Find the target admin
   const targetAdmin = await prisma.admin.findUnique({
     where: { id: adminId, isDeleted: false },
   });
@@ -148,7 +124,6 @@ const updateAdmin = async (
     throw new AppError(status.NOT_FOUND, "Admin not found");
   }
 
-  // 2. Permission checks
   if (role === Role.SUPER_ADMIN) {
     // Can update any admin + can change isOwner
   } else if (role === Role.UNIVERSITY_ADMIN) {
@@ -416,5 +391,5 @@ export const AdminService = {
   getAdminById,
   updateAdmin,
   addAdminToUniversity,
-  deleteAdmin
+  deleteAdmin,
 };

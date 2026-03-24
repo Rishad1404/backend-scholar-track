@@ -3,15 +3,25 @@ import { catchAsync } from "../../shared/catchAsync";
 import { sendResponse } from "../../shared/sendResponse";
 import { UniversityService } from "./university.service";
 import status from "http-status";
+import { IQueryParams } from "../../interfaces/query.interface";
+
 
 const getAllUniversities = catchAsync(async (req: Request, res: Response) => {
   const { userId, role } = req.user!;
-  const result = await UniversityService.getAllUniversities(userId, role);
+  const query = req.query; 
+
+  const result = await UniversityService.getAllUniversities(
+    userId, 
+    role, 
+    query as IQueryParams
+  );
+
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
     message: "Universities fetched successfully",
-    data: result,
+    data: result.data, 
+    meta: result.meta, 
   });
 });
 

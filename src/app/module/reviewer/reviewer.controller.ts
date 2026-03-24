@@ -3,6 +3,7 @@ import { catchAsync } from "../../shared/catchAsync";
 import { sendResponse } from "../../shared/sendResponse";
 import { ReviewerService } from "./reviewer.service";
 import status from "http-status";
+import { IQueryParams } from "../../interfaces/query.interface";
 
 const addReviewer = catchAsync(async (req: Request, res: Response) => {
   const { userId, role } = req.user!;
@@ -17,12 +18,14 @@ const addReviewer = catchAsync(async (req: Request, res: Response) => {
 
 const getAllReviewers = catchAsync(async (req: Request, res: Response) => {
   const { userId, role } = req.user!;
-  const result = await ReviewerService.getAllReviewers(userId, role);
+  const query = req.query;
+  const result = await ReviewerService.getAllReviewers(userId, role, query as IQueryParams);
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
     message: "Reviewers fetched successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 

@@ -7,6 +7,10 @@ import { envVars } from "../../../config/env";
 import { prisma } from "../../lib/prisma";
 import { Role } from "../../../generated/prisma/enums";
 import { auth } from "../../lib/auth";
+import { IQueryParams } from "../../interfaces/query.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { Prisma, Reviewer } from "../../../generated/prisma/client";
+import { reviewerFilterableFields, reviewerIncludeConfig, reviewerSearchableFields } from "./reviewer.constant";
 
 const addReviewer = async (
   userId: string,
@@ -124,42 +128,38 @@ const addReviewer = async (
   return result;
 };
 
-const getAllReviewers = async (userId: string, role: string) => {
-  if (role === Role.SUPER_ADMIN) {
-    return await prisma.reviewer.findMany({
-      where: { isDeleted: false },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            status: true,
-          },
-        },
-        university: {
-          select: { id: true, name: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  }
 
-  const currentAdmin = await prisma.admin.findFirst({
-    where: { userId, isDeleted: false },
+const getAllReviewers = async (
+  userId: string,
+  role: string,
+  query: IQueryParams
+) => {
+  const queryBuilder = new QueryBuilder<
+    Reviewer,
+    Prisma.ReviewerWhereInput,
+    Prisma.ReviewerInclude
+  >(prisma.reviewer, query, {
+    searchableFields: reviewerSearchableFields,
+    filterableFields: reviewerFilterableFields,
   });
 
-  if (!currentAdmin) {
-    throw new AppError(status.NOT_FOUND, "Admin profile not found");
+  if (role === Role.UNIVERSITY_ADMIN) {
+    const currentAdmin = await prisma.admin.findFirst({
+      where: { userId, isDeleted: false },
+    });
+
+    if (!currentAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    queryBuilder.where({ universityId: currentAdmin.universityId });
   }
 
-  return await prisma.reviewer.findMany({
-    where: {
-      universityId: currentAdmin.universityId,
-      isDeleted: false,
-    },
-    include: {
+  const result = await queryBuilder
+    .search()
+    .filter()
+    .where({ isDeleted: false })
+    .include({
       user: {
         select: {
           id: true,
@@ -169,13 +169,17 @@ const getAllReviewers = async (userId: string, role: string) => {
           status: true,
         },
       },
-      university: {
-        select: { id: true, name: true },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      university: { select: { id: true, name: true } },
+    })
+    .dynamicInclude(reviewerIncludeConfig)
+    .paginate()
+    .sort()
+    .fields()
+    .execute();
+
+  return result;
 };
+
 
 const getReviewerById = async (
   userId: string,

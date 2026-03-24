@@ -1,12 +1,29 @@
 import { Router } from "express";
 import { AcademicLevelController } from "./level.controller";
 import { checkAuth } from "../../middleware/checkAuth";
+import { validateRequest } from "../../middleware/validateRequest";
+import { createAcademicLevelSchema } from "./level.validation"; 
 import { Role } from "../../../generated/prisma/enums";
 
-const router=Router();
+const router = Router();
 
-router.post("/",checkAuth(Role.UNIVERSITY_ADMIN),AcademicLevelController.createAcademicLevel)
-router.get("/",AcademicLevelController.getAllAcademicLevels)
-router.delete("/:id",checkAuth(Role.UNIVERSITY_ADMIN),AcademicLevelController.deleteAcademicLevel)
+router.get(
+  "/",
+  checkAuth(Role.SUPER_ADMIN, Role.UNIVERSITY_ADMIN, Role.DEPARTMENT_HEAD, Role.STUDENT),
+  AcademicLevelController.getAllAcademicLevels
+);
 
-export const AcademicLevelRoutes=router
+router.post(
+  "/",
+  checkAuth(Role.SUPER_ADMIN, Role.UNIVERSITY_ADMIN),
+  validateRequest(createAcademicLevelSchema),
+  AcademicLevelController.createAcademicLevel
+);
+
+router.delete(
+  "/:id",
+  checkAuth(Role.SUPER_ADMIN, Role.UNIVERSITY_ADMIN),
+  AcademicLevelController.deleteAcademicLevel
+);
+
+export const AcademicLevelRoutes = router;

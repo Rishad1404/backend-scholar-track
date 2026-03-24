@@ -3,6 +3,7 @@ import { catchAsync } from "../../shared/catchAsync";
 import { sendResponse } from "../../shared/sendResponse";
 import { DepartmentService } from "./department.service";
 import status from "http-status";
+import { IQueryParams } from "../../interfaces/query.interface";
 
 const createDepartment = catchAsync(async (req: Request, res: Response) => {
   const { userId, role } = req.user!;
@@ -18,21 +19,23 @@ const createDepartment = catchAsync(async (req: Request, res: Response) => {
 const getAllDepartments = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const role = req.user?.role;
-  const { universityId } = req.query;
+  const query = req.query;
 
   const result = await DepartmentService.getAllDepartments(
     userId,
     role,
-    universityId as string
+    query as IQueryParams
   );
 
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
     message: "Departments fetched successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta, 
   });
 });
+
 const getDepartmentsByUniversityId = catchAsync(async (req: Request, res: Response) => {
   const { universityId } = req.params
 

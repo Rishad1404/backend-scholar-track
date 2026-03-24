@@ -9,6 +9,10 @@ import {
 import { Role } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { auth } from "../../lib/auth";
+import { IQueryParams } from "../../interfaces/query.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { DepartmentHead, Prisma } from "../../../generated/prisma/client";
+import { departmentHeadFilterableFields, departmentHeadIncludeConfig, departmentHeadSearchableFields } from "./deptHead.constant";
 
 const addDepartmentHead = async (
   userId: string,
@@ -148,64 +152,49 @@ const addDepartmentHead = async (
   return result;
 };
 
-const getAllDepartmentHeads = async (userId: string, role: string) => {
-  if (role === Role.SUPER_ADMIN) {
-    return await prisma.departmentHead.findMany({
-      where: { isDeleted: false },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            status: true,
-          },
-        },
-        university: {
-          select: { id: true, name: true },
-        },
-        department: {
-          select: { id: true, name: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
+const getAllDepartmentHeads = async (
+  userId: string,
+  role: string,
+  query: IQueryParams
+) => {
+  const queryBuilder = new QueryBuilder<
+    DepartmentHead,
+    Prisma.DepartmentHeadWhereInput,
+    Prisma.DepartmentHeadInclude
+  >(prisma.departmentHead, query, {
+    searchableFields: departmentHeadSearchableFields,
+    filterableFields: departmentHeadFilterableFields,
+  });
+
+  // 🛡️ RBAC Logic: Lock University Admins to their specific university ID.
+  // Super Admins bypass this block and can query all Department Heads.
+  if (role === Role.UNIVERSITY_ADMIN) {
+    const currentAdmin = await prisma.admin.findFirst({
+      where: { userId, isDeleted: false },
     });
+
+    if (!currentAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    // Force the query to ONLY return Department Heads from their university
+    queryBuilder.where({ universityId: currentAdmin.universityId });
   }
 
-  const currentAdmin = await prisma.admin.findFirst({
-    where: { userId, isDeleted: false },
-  });
+  // Execute the chained query builder
+  const result = await queryBuilder
+    .search()
+    .filter()
+    .where({ isDeleted: false })
+    .dynamicInclude(departmentHeadIncludeConfig)
+    .paginate()
+    .sort()
+    .fields()
+    .execute();
 
-  if (!currentAdmin) {
-    throw new AppError(status.NOT_FOUND, "Admin profile not found");
-  }
-
-  return await prisma.departmentHead.findMany({
-    where: {
-      universityId: currentAdmin.universityId,
-      isDeleted: false,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          status: true,
-        },
-      },
-      university: {
-        select: { id: true, name: true },
-      },
-      department: {
-        select: { id: true, name: true },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  return result;
 };
+
 
 const deleteDepartmentHead = async (userId: string, role: string, deptHeadId: string) => {
   const deptHead = await prisma.departmentHead.findFirst({

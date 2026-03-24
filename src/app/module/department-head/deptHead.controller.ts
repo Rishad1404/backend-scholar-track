@@ -3,14 +3,11 @@ import { catchAsync } from "../../shared/catchAsync";
 import { sendResponse } from "../../shared/sendResponse";
 import status from "http-status";
 import { DepartmentHeadService } from "./deptHead.service";
+import { IQueryParams } from "../../interfaces/query.interface";
 
 const addDepartmentHead = catchAsync(async (req: Request, res: Response) => {
   const { userId, role } = req.user!;
-  const result = await DepartmentHeadService.addDepartmentHead(
-    userId,
-    role,
-    req.body
-  );
+  const result = await DepartmentHeadService.addDepartmentHead(userId, role, req.body);
   sendResponse(res, {
     httpStatusCode: status.CREATED,
     success: true,
@@ -21,12 +18,20 @@ const addDepartmentHead = catchAsync(async (req: Request, res: Response) => {
 
 const getAllDepartmentHeads = catchAsync(async (req: Request, res: Response) => {
   const { userId, role } = req.user!;
-  const result = await DepartmentHeadService.getAllDepartmentHeads(userId, role);
+  const query = req.query;
+
+  const result = await DepartmentHeadService.getAllDepartmentHeads(
+    userId,
+    role,
+    query as IQueryParams,
+  );
+
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
     message: "Department Heads fetched successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -36,7 +41,7 @@ const deleteDepartmentHead = catchAsync(async (req: Request, res: Response) => {
   const result = await DepartmentHeadService.deleteDepartmentHead(
     userId,
     role,
-    deptHeadId as string
+    deptHeadId as string,
   );
   sendResponse(res, {
     httpStatusCode: status.OK,
@@ -52,7 +57,7 @@ const getDepartmentHeadById = catchAsync(async (req: Request, res: Response) => 
   const result = await DepartmentHeadService.getDepartmentHeadById(
     userId,
     role,
-    deptHeadId as string
+    deptHeadId as string,
   );
   sendResponse(res, {
     httpStatusCode: status.OK,
@@ -69,7 +74,7 @@ const updateDepartmentHead = catchAsync(async (req: Request, res: Response) => {
     userId,
     role,
     deptHeadId as string,
-    req.body
+    req.body,
   );
   sendResponse(res, {
     httpStatusCode: status.OK,
@@ -84,5 +89,5 @@ export const DepartmentHeadController = {
   getAllDepartmentHeads,
   deleteDepartmentHead,
   getDepartmentHeadById,
-  updateDepartmentHead
+  updateDepartmentHead,
 };

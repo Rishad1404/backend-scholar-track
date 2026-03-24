@@ -9,12 +9,14 @@ import { InviteRoutes } from "../module/invite/invite.route";
 import { DepartmentHeadRoutes } from "../module/department-head/deptHead.route";
 import { ReviewerRoutes } from "../module/reviewer/reviewer.route";
 import { UniversityRoutes } from "../module/university/university.route";
+import { StudentRoutes } from "../module/student/student.route";
 
 const router = Router();
 
 
 router.use('/auth',AuthRoutes);
 router.use('/users',UserRoutes);
+router.use("/students", StudentRoutes);
 router.use("/admins", AdminRoutes);
 router.use('/academic-level',AcademicLevelRoutes);
 router.use('/academic-term',AcademicTermRoutes);

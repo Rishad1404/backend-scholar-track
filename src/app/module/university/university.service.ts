@@ -6,59 +6,52 @@ import { deleteFileFromCloudinary } from "../../../config/cloudinary.config";
 import { Role, UniversityStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { TUpdateUniversityStatusPayload } from "./university.validation";
+import { IQueryParams } from "../../interfaces/query.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { Prisma, University } from "../../../generated/prisma/client";
+import { universityFilterableFields, universityIncludeConfig, universitySearchableFields } from "./university.constant";
 
-const getAllUniversities = async (userId: string, role: string) => {
-  if (role === Role.SUPER_ADMIN) {
-    return await prisma.university.findMany({
-      where: { isDeleted: false },
-      include: {
-        _count: {
-          select: {
-            admins: true,
-            departments: true,
-            scholarships: true,
-            students: true,
-            departmentHeads: true,
-            reviewers: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
+const getAllUniversities = async (
+  userId: string,
+  role: string,
+  query: IQueryParams
+) => {
+  const queryBuilder = new QueryBuilder<
+    University,
+    Prisma.UniversityWhereInput,
+    Prisma.UniversityInclude
+  >(prisma.university, query, {
+    searchableFields: universitySearchableFields,
+    filterableFields: universityFilterableFields,
+  });
+
+  // 🛡️ RBAC Logic: Lock University Admins to their specific university ID.
+  // Super Admins bypass this block and naturally query all universities.
+  if (role === Role.UNIVERSITY_ADMIN) {
+    const currentAdmin = await prisma.admin.findFirst({
+      where: { userId, isDeleted: false },
     });
+
+    if (!currentAdmin) {
+      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+    }
+
+    // Force the query to ONLY return their university
+    queryBuilder.where({ id: currentAdmin.universityId });
   }
 
-  const currentAdmin = await prisma.admin.findFirst({
-    where: { userId, isDeleted: false },
-  });
+  // Execute the chained query builder
+  const result = await queryBuilder
+    .search()
+    .filter()
+    .where({ isDeleted: false })
+    .dynamicInclude(universityIncludeConfig)
+    .paginate()
+    .sort() 
+    .fields()
+    .execute();
 
-  if (!currentAdmin) {
-    throw new AppError(status.NOT_FOUND, "Admin profile not found");
-  }
-
-  const university = await prisma.university.findFirst({
-    where: {
-      id: currentAdmin.universityId,
-      isDeleted: false,
-    },
-    include: {
-      _count: {
-        select: {
-          admins: true,
-          departments: true,
-          scholarships: true,
-          students: true,
-          departmentHeads: true,
-          reviewers: true,
-        },
-      },
-    },
-  });
-
-  if (!university) {
-    throw new AppError(status.NOT_FOUND, "University not found");
-  }
-
-  return [university];
+  return result;
 };
 
 const getUniversityById = async (userId: string, role: string, universityId: string) => {

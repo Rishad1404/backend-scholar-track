@@ -6,6 +6,10 @@ import {
 import { Role } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import AppError from "../../errorHelpers/AppError";
+import { IQueryParams } from "../../interfaces/query.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { Department, Prisma } from "../../../generated/prisma/client";
+import { departmentAdminIncludeConfig, departmentFilterableFields, departmentPublicIncludeConfig, departmentSearchableFields } from "./department.constant";
 
 // Helper — get universityId from admin profile
 const getUniversityId = async (userId: string, role: string) => {
@@ -71,63 +75,53 @@ const createDepartment = async (
 };
 
 const getAllDepartments = async (
-  userId?: string,
-  role?: string,
-  queryUniversityId?: string,
+  userId: string | undefined,
+  role: string | undefined,
+  query: IQueryParams
 ) => {
-  // Super Admin → all departments
-  if (role === Role.SUPER_ADMIN) {
-    return await prisma.department.findMany({
-      where: { isDeleted: false },
-      include: {
-        university: { select: { id: true, name: true } },
-        _count: {
-          select: {
-            departmentHeads:      true,
-            scholarships:         true,
-            studentAcademicInfos: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    })
+  const queryBuilder = new QueryBuilder<
+    Department,
+    Prisma.DepartmentWhereInput,
+    Prisma.DepartmentInclude
+  >(prisma.department, query, {
+    searchableFields: departmentSearchableFields,
+    filterableFields: departmentFilterableFields,
+  });
+
+  let includeConfig = departmentPublicIncludeConfig;
+
+  // 🛡️ Admin Logic & RBAC
+  if (role === Role.SUPER_ADMIN || role === Role.UNIVERSITY_ADMIN) {
+    includeConfig = departmentAdminIncludeConfig;
+
+    if (role === Role.UNIVERSITY_ADMIN && userId) {
+      // Reusing your existing helper function
+      const universityId = await getUniversityId(userId, role);
+      
+      if (!universityId) {
+        throw new AppError(status.NOT_FOUND, "University ID not found for this admin");
+      }
+      
+      // Force the query to ONLY return their university's departments
+      queryBuilder.where({ universityId });
+    }
   }
 
-  // University Admin → their university only
-  if (role === Role.UNIVERSITY_ADMIN && userId) {
-    const universityId = await getUniversityId(userId, role)
+  // Execute the chained query builder
+  // Note: For public/students, if they pass ?universityId=123 in the URL, 
+  // the .filter() method handles it automatically!
+  const result = await queryBuilder
+    .search()
+    .filter()
+    .where({ isDeleted: false })
+    .dynamicInclude(includeConfig)
+    .paginate()
+    .sort()
+    .fields()
+    .execute();
 
-    return await prisma.department.findMany({
-      where: { universityId: universityId!, isDeleted: false },
-      include: {
-        university: { select: { id: true, name: true } },
-        _count: {
-          select: {
-            departmentHeads:      true,
-            scholarships:         true,
-            studentAcademicInfos: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    })
-  }
-
-  // Public / Student — filter by universityId if provided
-  // if no universityId — return all (limited fields)
-  return await prisma.department.findMany({
-    where: {
-      isDeleted: false,
-      ...(queryUniversityId && { universityId: queryUniversityId }),
-    },
-    select: {
-      id:   true,
-      name: true,
-      university: { select: { id: true, name: true } },
-    },
-    orderBy: { name: "asc" },
-  })
-}
+  return result;
+};
 
 
 const getDepartmentsByUniversityId = async (universityId: string) => {
