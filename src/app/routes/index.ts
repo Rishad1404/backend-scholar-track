@@ -10,6 +10,7 @@ import { DepartmentHeadRoutes } from "../module/department-head/deptHead.route";
 import { ReviewerRoutes } from "../module/reviewer/reviewer.route";
 import { UniversityRoutes } from "../module/university/university.route";
 import { StudentRoutes } from "../module/student/student.route";
+import { ScholarshipRoutes } from "../module/scholarship/scholarship.route";
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.use("/department-heads", DepartmentHeadRoutes);
 router.use("/reviewers", ReviewerRoutes);
 router.use("/invites", InviteRoutes);
 router.use("/universities", UniversityRoutes);
+router.use("/scholarships", ScholarshipRoutes);
 
 
 export const IndexRoutes = router;

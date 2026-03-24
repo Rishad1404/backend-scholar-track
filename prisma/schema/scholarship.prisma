@@ -14,6 +14,8 @@ model Scholarship {
   title            String            @db.VarChar(255)
   description      String?           @db.Text
   deadline         DateTime
+  document         String?           @db.VarChar(255)
+  documentPublicId String?           @db.VarChar(255)
   totalAmount      Float             @db.DoublePrecision
   amountPerStudent Float             @db.DoublePrecision
   quota            Int               @db.Integer
