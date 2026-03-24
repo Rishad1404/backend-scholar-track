@@ -238,11 +238,44 @@ const updateUniversityStatus = async (
     throw new AppError(status.NOT_FOUND, "University not found");
   }
 
-  const updatedUniversity = await prisma.university.update({
+  const { status: newStatus } = payload;
+
+  // Prevent setting same status
+  if (university.status === newStatus) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `University is already ${newStatus.toLowerCase()}`,
+    );
+  }
+
+  // Valid transition rules
+  // PENDING  → APPROVED
+  // PENDING  → SUSPENDED  (must be approved first)
+  // APPROVED → SUSPENDED
+  // APPROVED → PENDING    (no going back to pending)
+  // SUSPENDED → APPROVED
+  // SUSPENDED → PENDING   (no going back to pending)
+
+  if (
+    newStatus === UniversityStatus.SUSPENDED &&
+    university.status === UniversityStatus.PENDING
+  ) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "Cannot suspend a university that has not been approved yet",
+    );
+  }
+
+  if (newStatus === UniversityStatus.PENDING) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "Cannot revert university status back to pending",
+    );
+  }
+
+  return await prisma.university.update({
     where: { id: universityId },
-    data: {
-      status: payload.status as UniversityStatus,
-    },
+    data: { status: newStatus },
     include: {
       _count: {
         select: {
@@ -254,10 +287,7 @@ const updateUniversityStatus = async (
       },
     },
   });
-
-  return updatedUniversity;
 };
-
 const deleteUniversity = async (universityId: string) => {
   const university = await prisma.university.findFirst({
     where: { id: universityId, isDeleted: false },
@@ -267,52 +297,84 @@ const deleteUniversity = async (universityId: string) => {
     throw new AppError(status.NOT_FOUND, "University not found");
   }
 
-  const activeAdmins = await prisma.admin.count({
-    where: { universityId, isDeleted: false },
-  });
+  // Check all active related data
+  const [
+    activeAdmins,
+    activeStudents,
+    activeDeptHeads,
+    activeReviewers,
+    activeDepartments,
+    activeScholarships,
+  ] = await Promise.all([
+    prisma.admin.count({ where: { universityId, isDeleted: false } }),
+    prisma.student.count({ where: { universityId, isDeleted: false } }),
+    prisma.departmentHead.count({ where: { universityId, isDeleted: false } }),
+    prisma.reviewer.count({ where: { universityId, isDeleted: false } }),
+    prisma.department.count({ where: { universityId, isDeleted: false } }), // New
+    prisma.scholarship.count({ where: { universityId, isDeleted: false } }), // New
+  ]);
+
+  if (activeDepartments > 0) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `Cannot delete university with ${activeDepartments} active department(s).`,
+    );
+  }
+
+  if (activeScholarships > 0) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `Cannot delete university with ${activeScholarships} active scholarship(s).`,
+    );
+  }
 
   if (activeAdmins > 0) {
     throw new AppError(
       status.BAD_REQUEST,
-      "Cannot delete university with active admins. Remove all admins first.",
+      `Cannot delete university with ${activeAdmins} active admin(s). Remove them first.`,
     );
   }
 
-  // Delete logo from Cloudinary
+  if (activeStudents > 0) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `Cannot delete university with ${activeStudents} active student(s).`,
+    );
+  }
+
+  if (activeDeptHeads > 0) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `Cannot delete university with ${activeDeptHeads} active department head(s).`,
+    );
+  }
+
+  if (activeReviewers > 0) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `Cannot delete university with ${activeReviewers} active reviewer(s).`,
+    );
+  }
+
   if (university.logoUrl) {
     await deleteFileFromCloudinary(university.logoUrl).catch((err) =>
       console.error("Failed to delete logo:", err.message),
     );
   }
 
-  const result = await prisma.university.update({
+  return await prisma.university.update({
     where: { id: universityId },
     data: {
       isDeleted: true,
       deletedAt: new Date(),
     },
   });
-
-  return result;
 };
-
 const getPublicUniversities = async () => {
   return await prisma.university.findMany({
     where: {
       isDeleted: false,
       status: UniversityStatus.APPROVED,
-    },
-    select: {
-      id: true,
-      name: true,
-      logoUrl: true,
-      website: true,
-      _count: {
-        select: {
-          departments: true,
-          scholarships: true,
-        },
-      },
     },
     orderBy: { name: "asc" },
   });
