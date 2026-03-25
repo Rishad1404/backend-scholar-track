@@ -39,6 +39,8 @@ interface EnvConfig {
   },
   SUPER_ADMIN_EMAIL: string;
   SUPER_ADMIN_PASSWORD: string;
+  OPENAI_API_KEY: string;
+  GEMINI_API_KEY: string;
   
 }
 
@@ -72,6 +74,8 @@ const loadEnvVariables = (): EnvConfig => {
     "STRIPE_PUBLISHABLE_KEY",
     "SUPER_ADMIN_EMAIL",
     "SUPER_ADMIN_PASSWORD",
+    "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
   ];
 
   requireEnvVariables.forEach((variable) => {
@@ -119,6 +123,8 @@ const loadEnvVariables = (): EnvConfig => {
     },
     SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL as string,
     SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD as string,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY as string,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY as string,
   };
 };
 

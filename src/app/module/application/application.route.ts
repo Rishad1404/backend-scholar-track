@@ -11,8 +11,6 @@ import { multerUpload } from "../../../config/multer.config";
 
 const router = Router();
 
-
-
 // ── Student: My Applications ──
 router.get(
   "/my-applications",
@@ -34,16 +32,16 @@ router.post(
   checkAuth(Role.STUDENT),
   multerUpload.single("file"),
   validateRequest(ApplicationValidation.uploadDocumentSchema),
-  ApplicationController.uploadDocument
+  ApplicationController.uploadDocument,
 );
 
 // ── Student: Upload Bulk Documents ──
 router.post(
   "/:applicationId/documents/bulk",
   checkAuth(Role.STUDENT),
-  multerUpload.array("files", 10), 
+  multerUpload.array("files", 10),
   validateRequest(ApplicationValidation.uploadBulkDocumentsSchema),
-  ApplicationController.uploadBulkDocuments
+  ApplicationController.uploadBulkDocuments,
 );
 
 // ── Student: Remove Document ──
@@ -98,6 +96,12 @@ router.get(
     Role.STUDENT,
   ),
   ApplicationController.getApplicationById,
+);
+
+router.post(
+  "/:applicationId/ai-evaluate",
+  checkAuth(Role.DEPARTMENT_HEAD, Role.COMMITTEE_REVIEWER, Role.UNIVERSITY_ADMIN),
+  ApplicationController.runAiEvaluation,
 );
 
 export const ApplicationRoutes = router;

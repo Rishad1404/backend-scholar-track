@@ -5,6 +5,7 @@ import { sendResponse } from "../../shared/sendResponse";
 import { ApplicationService } from "./application.service";
 import { IQueryParams } from "../../interfaces/query.interface";
 import AppError from "../../errorHelpers/AppError";
+import { AiService } from "./ai.service";
 
 // ── Helper: Extract single file data ──
 const extractFileData = (file?: Express.Multer.File) => {
@@ -212,6 +213,20 @@ const getApplicationById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const runAiEvaluation = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { applicationId } = req.params;
+
+  const result = await AiService.evaluateApplication(userId, applicationId as string);
+
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: "AI Evaluation completed successfully",
+    data: result,
+  });
+});
+
 export const ApplicationController = {
   createApplication,
   uploadDocument,
@@ -223,4 +238,5 @@ export const ApplicationController = {
   getMyApplications,
   getAllApplications,
   getApplicationById,
+  runAiEvaluation,
 };
