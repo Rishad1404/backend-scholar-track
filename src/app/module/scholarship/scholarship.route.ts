@@ -49,7 +49,7 @@ router.patch(
 );
 
 router.patch(
-  "/:scholarshipId/status",
+  "/status/:scholarshipId",
   checkAuth(Role.SUPER_ADMIN, Role.UNIVERSITY_ADMIN),
   validateRequest(ScholarshipValidation.changeScholarshipStatusSchema),
   ScholarshipController.changeScholarshipStatus,

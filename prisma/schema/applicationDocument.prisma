@@ -12,10 +12,10 @@ model ApplicationDocument {
   applicationId String       
   type          DocumentType
 
-  fileUrl  String @db.VarChar(500) // Cloudinary secure URL
-  publicId String @db.VarChar(255) // Cloudinary public_id (needed for deletion)
-  fileName String @db.VarChar(255) // original file name shown to user
-  fileSize Int    @db.Integer // in bytes
+  fileUrl  String @db.VarChar(500) 
+  publicId String @db.VarChar(255) 
+  fileName String @db.VarChar(255) 
+  fileSize Int    @db.Integer 
 
   uploadedAt DateTime @default(now())
 

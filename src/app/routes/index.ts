@@ -11,6 +11,7 @@ import { ReviewerRoutes } from "../module/reviewer/reviewer.route";
 import { UniversityRoutes } from "../module/university/university.route";
 import { StudentRoutes } from "../module/student/student.route";
 import { ScholarshipRoutes } from "../module/scholarship/scholarship.route";
+import { ApplicationRoutes } from "../module/application/application.route";
 
 const router = Router();
 
@@ -27,6 +28,7 @@ router.use("/reviewers", ReviewerRoutes);
 router.use("/invites", InviteRoutes);
 router.use("/universities", UniversityRoutes);
 router.use("/scholarships", ScholarshipRoutes);
+router.use("/applications", ApplicationRoutes);
 
 
 export const IndexRoutes = router;
