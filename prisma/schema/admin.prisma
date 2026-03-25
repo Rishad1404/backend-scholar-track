@@ -8,7 +8,7 @@ enum SubscriptionStatus {
 model Admin {
   id           String @id @default(uuid())
   userId       String  @unique
-  universityId String 
+  universityId String?
 
   name        String  @db.VarChar(255) 
   email       String  @db.VarChar(255) 
@@ -26,7 +26,7 @@ model Admin {
 
   // Relations
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  university University @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  university University? @relation(fields: [universityId], references: [id], onDelete: Restrict)
   subscriptionPayments SubscriptionPayment[]
   approvedDisbursements Disbursement[]
 

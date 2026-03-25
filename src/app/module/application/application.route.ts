@@ -41,7 +41,7 @@ router.post(
 router.post(
   "/:applicationId/documents/bulk",
   checkAuth(Role.STUDENT),
-  multerUpload.array("files", 10),  // max 10 files at once
+  multerUpload.array("files", 10), 
   validateRequest(ApplicationValidation.uploadBulkDocumentsSchema),
   ApplicationController.uploadBulkDocuments
 );

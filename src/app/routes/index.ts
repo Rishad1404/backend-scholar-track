@@ -12,6 +12,11 @@ import { UniversityRoutes } from "../module/university/university.route";
 import { StudentRoutes } from "../module/student/student.route";
 import { ScholarshipRoutes } from "../module/scholarship/scholarship.route";
 import { ApplicationRoutes } from "../module/application/application.route";
+import { ScreeningRoutes } from "../module/screening/screening.route";
+import { ReviewRoutes } from "../module/review-application/review.route";
+import { DecisionRoutes } from "../module/decision/decision.route";
+import { SubscriptionRoutes } from "../module/subscription/subscription.route";
+import { DisbursementRoutes } from "../module/disbursement/disbursement.route";
 
 const router = Router();
 
@@ -29,6 +34,11 @@ router.use("/invites", InviteRoutes);
 router.use("/universities", UniversityRoutes);
 router.use("/scholarships", ScholarshipRoutes);
 router.use("/applications", ApplicationRoutes);
+router.use("/applications", ScreeningRoutes);
+router.use("/applications", ReviewRoutes);
+router.use("/applications", DecisionRoutes);
+router.use("/subscriptions",SubscriptionRoutes);
+router.use("/disbursements",DisbursementRoutes);
 
 
 export const IndexRoutes = router;
