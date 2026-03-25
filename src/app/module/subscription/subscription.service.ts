@@ -95,7 +95,7 @@ const createCheckoutSession = async (
           currency: "bdt",
           product_data: {
             name: `ScholarTrack ${priceConfig.label}`,
-            description: `${payload.plan} subscription for ${admin.university.name}`,
+            description: `${payload.plan} subscription for ${admin.university?.name}`,
           },
           unit_amount: priceConfig.amount,
         },

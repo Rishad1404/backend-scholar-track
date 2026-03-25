@@ -12,7 +12,6 @@ export const seedSuperAdmin = async () => {
     });
 
     if (isSuperAdmin) {
-      console.log("Super admin already exists");
       return;
     }
 
@@ -21,45 +20,29 @@ export const seedSuperAdmin = async () => {
         name: "Super Admin",
         email: envVars.SUPER_ADMIN_EMAIL,
         password: envVars.SUPER_ADMIN_PASSWORD,
-        role: Role.SUPER_ADMIN,
-        needPasswordChange: false,
-        rememberMe: false,
       },
-    });
-    await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-            where: {
-                id: superAdminUser.user.id,
-            },
-            data: {
-                emailVerified: true,
-            },
-        })
-        await tx.admin.create({
-            data: {
-                userId: superAdminUser.user.id,
-                name:"Super Admin",
-                email: envVars.SUPER_ADMIN_EMAIL
-            },
-        })
-        
-    })
-    const superAdmin=await prisma.admin.findFirst({
-        where: {
-            email: envVars.SUPER_ADMIN_EMAIL,
-        },
-        include: {
-            user: true
-        }
     });
 
-    console.log("Super admin created", superAdmin);
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: {
+          id: superAdminUser.user.id,
+        },
+        data: {
+          role: Role.SUPER_ADMIN,
+          emailVerified: true,
+          needPasswordChange: false,
+        },
+      });
+    });
+
+    console.log("Super admin created successfully");
   } catch (error) {
-    console.log(`Failed to create super admin`, error);
-    await prisma.user.delete({
-      where: {
-        email: envVars.SUPER_ADMIN_EMAIL,
-      },
-    })
+    console.error("Failed to create super admin", error);
+    await prisma.user
+      .deleteMany({
+        where: { email: envVars.SUPER_ADMIN_EMAIL },
+      })
+      .catch(() => {});
   }
 };

@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/app/modules/disbursement/disbursement.service.ts
-
 import status from "http-status";
 import {
   ApplicationStatus,

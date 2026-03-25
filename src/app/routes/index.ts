@@ -17,6 +17,7 @@ import { ReviewRoutes } from "../module/review-application/review.route";
 import { DecisionRoutes } from "../module/decision/decision.route";
 import { SubscriptionRoutes } from "../module/subscription/subscription.route";
 import { DisbursementRoutes } from "../module/disbursement/disbursement.route";
+import { StatsRoutes } from "../module/stats/stats.route";
 
 const router = Router();
 
@@ -39,6 +40,7 @@ router.use("/applications", ReviewRoutes);
 router.use("/applications", DecisionRoutes);
 router.use("/subscriptions",SubscriptionRoutes);
 router.use("/disbursements",DisbursementRoutes);
+router.use("/stats", StatsRoutes);
 
 
 export const IndexRoutes = router;
