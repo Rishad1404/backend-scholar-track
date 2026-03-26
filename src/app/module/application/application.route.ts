@@ -8,6 +8,7 @@ import { validateRequest } from "../../middleware/validateRequest";
 import { ApplicationController } from "./application.controller";
 import { ApplicationValidation } from "./application.validation";
 import { multerUpload } from "../../../config/multer.config";
+import { AiController } from "./ai.controller";
 
 const router = Router();
 
@@ -98,10 +99,31 @@ router.get(
   ApplicationController.getApplicationById,
 );
 
+// Evaluate application with AI
 router.post(
   "/:applicationId/ai-evaluate",
-  checkAuth(Role.DEPARTMENT_HEAD, Role.COMMITTEE_REVIEWER, Role.UNIVERSITY_ADMIN),
-  ApplicationController.runAiEvaluation,
+  checkAuth(Role.SUPER_ADMIN, Role.UNIVERSITY_ADMIN, Role.DEPARTMENT_HEAD),
+  AiController.evaluateApplication,
+);
+
+// Re-evaluate (reset + evaluate again)
+router.post(
+  "/:applicationId/ai-re-evaluate",
+  checkAuth(Role.SUPER_ADMIN, Role.UNIVERSITY_ADMIN),
+  AiController.reEvaluateApplication,
+);
+
+// Get AI evaluation result
+router.get(
+  "/:applicationId/ai-evaluation",
+  checkAuth(
+    Role.SUPER_ADMIN,
+    Role.UNIVERSITY_ADMIN,
+    Role.DEPARTMENT_HEAD,
+    Role.COMMITTEE_REVIEWER,
+    Role.STUDENT,
+  ),
+  AiController.getAiEvaluation,
 );
 
 export const ApplicationRoutes = router;
