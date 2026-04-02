@@ -315,43 +315,51 @@ export class QueryBuilder<
     return this;
   }
 
-  dynamicInclude(
-    includeConfig: Record<string, unknown>,
-    defaultInclude?: string[],
-  ): this {
-    if (this.selectFields) {
-      return this;
-    }
+dynamicInclude(
+  includeConfig: Record<string, unknown>,
+  defaultInclude?: string[],
+): this {
+  if (this.selectFields) {
+    return this;
+  }
 
-    const result: Record<string, unknown> = {};
+  const result: Record<string, unknown> = {};
 
-    defaultInclude?.forEach((field) => {
+  // Check if ?includes=xxx is in URL
+  const includeParam = this.queryParams.includes as string | undefined;
+
+  if (includeParam && typeof includeParam === "string") {
+    // User explicitly requested specific relations
+    const requestedRelations = includeParam
+      .split(",")
+      .map((relation) => relation.trim());
+
+    requestedRelations.forEach((relation) => {
+      if (includeConfig[relation]) {
+        result[relation] = includeConfig[relation];
+      }
+    });
+  } else if (defaultInclude && defaultInclude.length > 0) {
+    // Use the default includes
+    defaultInclude.forEach((field) => {
       if (includeConfig[field]) {
         result[field] = includeConfig[field];
       }
     });
-
-    const includeParam = this.queryParams.includes as string | undefined;
-
-    if (includeParam && typeof includeParam === "string") {
-      const requestedRelations = includeParam
-        .split(",")
-        .map((relation) => relation.trim());
-
-      requestedRelations.forEach((relation) => {
-        if (includeConfig[relation]) {
-          result[relation] = includeConfig[relation];
-        }
-      });
-    }
-
-    this.query.include = {
-      ...(this.query.include as Record<string, unknown>),
-      ...result,
-    };
-
-    return this;
+  } else {
+    // No ?includes param, no defaultInclude → include ALL from config
+    Object.keys(includeConfig).forEach((key) => {
+      result[key] = includeConfig[key];
+    });
   }
+
+  this.query.include = {
+    ...(this.query.include as Record<string, unknown>),
+    ...result,
+  };
+
+  return this;
+}
 
   where(condition: TWhereInput): this {
     this.query.where = this.deepMerge(

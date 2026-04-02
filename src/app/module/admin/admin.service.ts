@@ -2,7 +2,10 @@ import status from "http-status";
 import { Role, UserStatus } from "../../../generated/prisma/enums";
 import AppError from "../../errorHelpers/AppError";
 import { prisma } from "../../lib/prisma";
-import { TAddAdminToUniversityPayload, TUpdateAdminPayload } from "./admin.validation";
+import {
+  TAddAdminToUniversityPayload,
+  TUpdateAdminPayload,
+} from "./admin.validation";
 import { auth } from "../../lib/auth";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { IQueryParams } from "../../interfaces/query.interface";
@@ -14,7 +17,11 @@ import {
   adminSearchableFields,
 } from "./admin.constant";
 
-const getAllAdmins = async (userId: string, role: string, query: IQueryParams) => {
+const getAllAdmins = async (
+  userId: string,
+  role: string,
+  query: IQueryParams,
+) => {
   const queryBuilder = new QueryBuilder<
     Admin,
     Prisma.AdminWhereInput,
@@ -23,7 +30,6 @@ const getAllAdmins = async (userId: string, role: string, query: IQueryParams) =
     searchableFields: adminSearchableFields,
     filterableFields: adminFilterableFields,
   });
-
 
   if (role === Role.UNIVERSITY_ADMIN) {
     const currentAdmin = await prisma.admin.findUnique({
@@ -34,7 +40,6 @@ const getAllAdmins = async (userId: string, role: string, query: IQueryParams) =
       throw new AppError(status.NOT_FOUND, "Admin profile not found");
     }
 
-    
     queryBuilder.where({ universityId: currentAdmin.universityId });
   }
 
@@ -50,7 +55,6 @@ const getAllAdmins = async (userId: string, role: string, query: IQueryParams) =
 
   return result;
 };
-
 
 const getAdminById = async (userId: string, role: string, adminId: string) => {
   const admin = await prisma.admin.findUnique({
@@ -221,7 +225,10 @@ const addAdminToUniversity = async (
 
   // 2. Only Owner Admin or Super Admin can add admins
   if (role !== Role.SUPER_ADMIN && !currentAdmin.isOwner) {
-    throw new AppError(status.FORBIDDEN, "Only the owner admin can add new admins");
+    throw new AppError(
+      status.FORBIDDEN,
+      "Only the owner admin can add new admins",
+    );
   }
 
   // 3. Check if email already exists
@@ -305,7 +312,10 @@ const deleteAdmin = async (adminId: string, requestUser: IRequestUser) => {
 
     // Non-owner can only delete themselves
     if (!requestingAdmin.isOwner && !isSelf) {
-      throw new AppError(status.FORBIDDEN, "You do not have permission to delete admins");
+      throw new AppError(
+        status.FORBIDDEN,
+        "You do not have permission to delete admins",
+      );
     }
 
     // Owner deleting others must be same university
@@ -319,7 +329,10 @@ const deleteAdmin = async (adminId: string, requestUser: IRequestUser) => {
 
       // Owner cannot delete another owner (business rule)
       if (targetAdmin.isOwner) {
-        throw new AppError(status.FORBIDDEN, "You cannot delete another owner admin");
+        throw new AppError(
+          status.FORBIDDEN,
+          "You cannot delete another owner admin",
+        );
       }
     }
   } else if (requestUser.role === Role.SUPER_ADMIN) {
@@ -327,7 +340,10 @@ const deleteAdmin = async (adminId: string, requestUser: IRequestUser) => {
     // If you want to prevent SUPER_ADMIN from deleting owner admins:
     // if (targetAdmin.isOwner) throw new AppError(status.FORBIDDEN, "Cannot delete owner admin");
   } else {
-    throw new AppError(status.FORBIDDEN, "You are not allowed to delete admins");
+    throw new AppError(
+      status.FORBIDDEN,
+      "You are not allowed to delete admins",
+    );
   }
 
   // 3) Soft delete Admin + User, and kill sessions (transaction)

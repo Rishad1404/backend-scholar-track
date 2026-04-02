@@ -11,6 +11,19 @@ export const departmentAdminIncludeConfig: Partial<
   >
 > = {
   university: { select: { id: true, name: true } },
+  departmentHeads: {
+    where: { isDeleted: false },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+  },
   _count: {
     select: {
       departmentHeads: true,

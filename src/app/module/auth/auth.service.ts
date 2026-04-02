@@ -15,7 +15,6 @@ import {
   IRegisterStudentPayload,
 } from "./auth.interface";
 
-
 const checkIsCredentialUser = async (email: string) => {
   const account = await prisma.account.findFirst({
     where: {
@@ -27,7 +26,7 @@ const checkIsCredentialUser = async (email: string) => {
   if (!account) {
     throw new AppError(
       status.BAD_REQUEST,
-      "This account uses Google sign-in. Password operations are not available."
+      "This account uses Google sign-in. Password operations are not available.",
     );
   }
 };
@@ -96,7 +95,6 @@ const registerStudent = async (payload: IRegisterStudentPayload) => {
     throw error;
   }
 };
-
 
 const loginUser = async (payload: ILoginUserPayload) => {
   const { email, password } = payload;
@@ -180,6 +178,10 @@ const getMe = async (user: IRequestUser) => {
 };
 
 const getNewToken = async (refreshToken: string, sessionToken: string) => {
+  if (!sessionToken || !refreshToken) {
+    throw new AppError(401, "Tokens are missing or invalid");
+  }
+
   const isSessionTokenExists = await prisma.session.findUnique({
     where: {
       token: sessionToken,
@@ -242,7 +244,10 @@ const getNewToken = async (refreshToken: string, sessionToken: string) => {
   };
 };
 
-const changePassword = async (payload: IChangePasswordPayload, sessionToken: string) => {
+const changePassword = async (
+  payload: IChangePasswordPayload,
+  sessionToken: string,
+) => {
   const session = await auth.api.getSession({
     headers: new Headers({
       Authorization: `Bearer ${sessionToken}`,
@@ -360,7 +365,11 @@ const forgetPassword = async (email: string) => {
   });
 };
 
-const resetPassword = async (email: string, otp: string, newPassword: string) => {
+const resetPassword = async (
+  email: string,
+  otp: string,
+  newPassword: string,
+) => {
   const isUserExists = await prisma.user.findUnique({
     where: { email },
   });
@@ -401,41 +410,40 @@ const resetPassword = async (email: string, otp: string, newPassword: string) =>
   });
 };
 
-const googleLoginSuccess = async (session : Record<string, any>) =>{
-    const isPatientExists = await prisma.student.findUnique({
-        where : {
-            userId : session.user.id,
-        }
-    })
+const googleLoginSuccess = async (session: Record<string, any>) => {
+  const isPatientExists = await prisma.student.findUnique({
+    where: {
+      userId: session.user.id,
+    },
+  });
 
-    if(!isPatientExists){
-        await prisma.student.create({
-            data : {
-                userId : session.user.id,
-                name : session.user.name,
-                email : session.user.email,
-            }
-        
-        })
-    }
-
-    const accessToken = tokenUtils.getAccessToken({
+  if (!isPatientExists) {
+    await prisma.student.create({
+      data: {
         userId: session.user.id,
-        role: session.user.role,
         name: session.user.name,
+        email: session.user.email,
+      },
     });
+  }
 
-    const refreshToken = tokenUtils.getRefreshToken({
-        userId: session.user.id,
-        role: session.user.role,
-        name: session.user.name,
-    });
+  const accessToken = tokenUtils.getAccessToken({
+    userId: session.user.id,
+    role: session.user.role,
+    name: session.user.name,
+  });
 
-    return {
-        accessToken,
-        refreshToken,
-    }
-}
+  const refreshToken = tokenUtils.getRefreshToken({
+    userId: session.user.id,
+    role: session.user.role,
+    name: session.user.name,
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+};
 
 export const AuthService = {
   registerStudent,
@@ -447,5 +455,5 @@ export const AuthService = {
   verifyEmail,
   forgetPassword,
   resetPassword,
-  googleLoginSuccess
+  googleLoginSuccess,
 };

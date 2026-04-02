@@ -74,11 +74,13 @@ const createDepartment = async (
   return department;
 };
 
+
 const getAllDepartments = async (
   userId: string | undefined,
   role: string | undefined,
   query: IQueryParams
 ) => {
+  // 1. Start building the query
   const queryBuilder = new QueryBuilder<
     Department,
     Prisma.DepartmentWhereInput,
@@ -88,28 +90,26 @@ const getAllDepartments = async (
     filterableFields: departmentFilterableFields,
   });
 
+  // 2. Default to Public Include
   let includeConfig = departmentPublicIncludeConfig;
 
-  // 🛡️ Admin Logic & RBAC
+  // 3. Admin Logic
   if (role === Role.SUPER_ADMIN || role === Role.UNIVERSITY_ADMIN) {
     includeConfig = departmentAdminIncludeConfig;
 
     if (role === Role.UNIVERSITY_ADMIN && userId) {
-      // Reusing your existing helper function
       const universityId = await getUniversityId(userId, role);
-      
       if (!universityId) {
-        throw new AppError(status.NOT_FOUND, "University ID not found for this admin");
+        throw new AppError(status.NOT_FOUND, "University ID not found");
       }
-      
-      // Force the query to ONLY return their university's departments
+      // Force filter by university
       queryBuilder.where({ universityId });
     }
   }
 
-  // Execute the chained query builder
-  // Note: For public/students, if they pass ?universityId=123 in the URL, 
-  // the .filter() method handles it automatically!
+  // 4. Execute the query
+  // IMPORTANT: Explicitly pass the includeConfig to .execute() 
+  // if .dynamicInclude() isn't working as expected.
   const result = await queryBuilder
     .search()
     .filter()
@@ -122,7 +122,6 @@ const getAllDepartments = async (
 
   return result;
 };
-
 
 const getDepartmentsByUniversityId = async (universityId: string) => {
   // Check university exists

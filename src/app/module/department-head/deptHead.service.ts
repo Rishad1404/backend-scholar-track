@@ -12,7 +12,11 @@ import { auth } from "../../lib/auth";
 import { IQueryParams } from "../../interfaces/query.interface";
 import { QueryBuilder } from "../../utils/QueryBuilder";
 import { DepartmentHead, Prisma } from "../../../generated/prisma/client";
-import { departmentHeadFilterableFields, departmentHeadIncludeConfig, departmentHeadSearchableFields } from "./deptHead.constant";
+import {
+  departmentHeadFilterableFields,
+  departmentHeadIncludeConfig,
+  departmentHeadSearchableFields,
+} from "./deptHead.constant";
 
 const addDepartmentHead = async (
   userId: string,
@@ -32,7 +36,10 @@ const addDepartmentHead = async (
 
   // 2. Only Owner Admin or Super Admin
   if (role !== Role.SUPER_ADMIN && !currentAdmin.isOwner) {
-    throw new AppError(status.FORBIDDEN, "Only the owner admin can add department heads");
+    throw new AppError(
+      status.FORBIDDEN,
+      "Only the owner admin can add department heads",
+    );
   }
 
   // 3. Check email already exists
@@ -54,7 +61,10 @@ const addDepartmentHead = async (
   });
 
   if (!department) {
-    throw new AppError(status.NOT_FOUND, "Department not found in your university");
+    throw new AppError(
+      status.NOT_FOUND,
+      "Department not found in your university",
+    );
   }
 
   // 5. Check if department already has an active head
@@ -147,7 +157,9 @@ const addDepartmentHead = async (
       addedByName: adminUser?.name || "Admin",
       loginUrl: `${envVars.FRONTEND_URL}/login`,
     },
-  }).catch((err) => console.error("Dept head welcome email failed:", err.message));
+  }).catch((err) =>
+    console.error("Dept head welcome email failed:", err.message),
+  );
 
   return result;
 };
@@ -155,7 +167,7 @@ const addDepartmentHead = async (
 const getAllDepartmentHeads = async (
   userId: string,
   role: string,
-  query: IQueryParams
+  query: IQueryParams,
 ) => {
   const queryBuilder = new QueryBuilder<
     DepartmentHead,
@@ -195,8 +207,11 @@ const getAllDepartmentHeads = async (
   return result;
 };
 
-
-const deleteDepartmentHead = async (userId: string, role: string, deptHeadId: string) => {
+const deleteDepartmentHead = async (
+  userId: string,
+  role: string,
+  deptHeadId: string,
+) => {
   const deptHead = await prisma.departmentHead.findFirst({
     where: { id: deptHeadId, isDeleted: false },
   });
@@ -291,12 +306,8 @@ const getDepartmentHeadById = async (
           status: true,
         },
       },
-      university: {
-        select: { id: true, name: true },
-      },
-      department: {
-        select: { id: true, name: true },
-      },
+      university: { select: { id: true, name: true } },
+      department: { select: { id: true, name: true } },
     },
   });
 
@@ -304,21 +315,30 @@ const getDepartmentHeadById = async (
     throw new AppError(status.NOT_FOUND, "Department Head not found");
   }
 
-  if (role !== Role.SUPER_ADMIN) {
-    const currentAdmin = await prisma.admin.findFirst({
-      where: { userId, isDeleted: false },
-    });
-
-    if (!currentAdmin) {
-      throw new AppError(status.NOT_FOUND, "Admin profile not found");
+  // ✅ Department Head can only view self
+  if (role === Role.DEPARTMENT_HEAD) {
+    if (deptHead.userId !== userId) {
+      throw new AppError(status.FORBIDDEN, "Access denied");
     }
+    return deptHead;
+  }
 
-    if (deptHead.universityId !== currentAdmin.universityId) {
-      throw new AppError(
-        status.FORBIDDEN,
-        "You don't have permission to view this department head",
-      );
-    }
+  // ✅ Super admin can view all
+  if (role === Role.SUPER_ADMIN) {
+    return deptHead;
+  }
+
+  // ✅ University admin can view within their university
+  const currentAdmin = await prisma.admin.findFirst({
+    where: { userId, isDeleted: false },
+  });
+
+  if (!currentAdmin) {
+    throw new AppError(status.NOT_FOUND, "Admin profile not found");
+  }
+
+  if (deptHead.universityId !== currentAdmin.universityId) {
+    throw new AppError(status.FORBIDDEN, "Access denied");
   }
 
   return deptHead;
@@ -344,8 +364,18 @@ const updateDepartmentHead = async (
     throw new AppError(status.NOT_FOUND, "Department Head not found");
   }
 
-  // Permission check
-  if (role !== Role.SUPER_ADMIN) {
+  const isSelf = deptHead.userId === userId;
+
+  // ✅ Department Head can only update self (no admin lookup)
+  if (role === Role.DEPARTMENT_HEAD) {
+    if (!isSelf) {
+      throw new AppError(status.FORBIDDEN, "Access denied");
+    }
+  }
+
+  // ✅ Super Admin can update anything
+  else if (role !== Role.SUPER_ADMIN) {
+    // University admin rules
     const currentAdmin = await prisma.admin.findFirst({
       where: { userId, isDeleted: false },
     });
@@ -355,8 +385,6 @@ const updateDepartmentHead = async (
     }
 
     // Owner admin OR the dept head themselves can update
-    const isSelf = deptHead.userId === userId;
-
     if (!currentAdmin.isOwner && !isSelf) {
       throw new AppError(
         status.FORBIDDEN,
@@ -364,7 +392,10 @@ const updateDepartmentHead = async (
       );
     }
 
-    if (currentAdmin.isOwner && deptHead.universityId !== currentAdmin.universityId) {
+    if (
+      currentAdmin.isOwner &&
+      deptHead.universityId !== currentAdmin.universityId
+    ) {
       throw new AppError(
         status.FORBIDDEN,
         "You can only update department heads from your university",
@@ -372,15 +403,20 @@ const updateDepartmentHead = async (
     }
   }
 
-  // Separate User fields and DeptHead fields
   const { name, ...deptHeadFields } = deptHeadData;
 
   const result = await prisma.$transaction(async (tx) => {
+    // ✅ Update user name first so include returns the latest name
+    if (name) {
+      await tx.user.update({
+        where: { id: deptHead.userId },
+        data: { name },
+      });
+    }
+
     const updatedDeptHead = await tx.departmentHead.update({
       where: { id: deptHeadId },
-      data: {
-        ...deptHeadFields,
-      },
+      data: { ...deptHeadFields },
       include: {
         user: {
           select: {
@@ -391,21 +427,10 @@ const updateDepartmentHead = async (
             status: true,
           },
         },
-        university: {
-          select: { id: true, name: true },
-        },
-        department: {
-          select: { id: true, name: true },
-        },
+        university: { select: { id: true, name: true } },
+        department: { select: { id: true, name: true } },
       },
     });
-
-    if (name) {
-      await tx.user.update({
-        where: { id: deptHead.userId },
-        data: { name },
-      });
-    }
 
     return updatedDeptHead;
   });

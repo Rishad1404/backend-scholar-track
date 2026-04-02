@@ -54,10 +54,16 @@ const uploadDocument = catchAsync(async (req: Request, res: Response) => {
     throw new AppError(status.BAD_REQUEST, "Document file is required");
   }
 
+  const documentType = req.body.type; 
+
+  if (!documentType) {
+     throw new AppError(status.BAD_REQUEST, "Document type is missing");
+  }
+
   const result = await ApplicationService.uploadDocument(
     userId,
     applicationId as string,
-    req.body.type,
+    documentType,
     fileData,
   );
 

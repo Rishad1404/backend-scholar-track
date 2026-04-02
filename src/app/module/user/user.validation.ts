@@ -34,3 +34,12 @@ export type TRegisterUniversityAdminPayload = z.infer<
   typeof registerUniversityAdminSchema
 >;
 
+
+export const updateUserStatusSchema = z.object({
+  status: z.enum(["ACTIVE", "BANNED"], {
+    message: "Status must be ACTIVE or BANNED",
+  }),
+});
+
+export type TUpdateUserStatusPayload = z.infer<typeof updateUserStatusSchema>;
+

@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/app/modules/application/ai.service.ts
-
 import status from "http-status";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
@@ -14,9 +12,7 @@ import { envVars } from "../../../config/env";
 
 const genAI = new GoogleGenerativeAI(envVars.GEMINI_API_KEY as string);
 
-// ═══════════════════════════════════════════
 // AI RESPONSE VALIDATION
-// ═══════════════════════════════════════════
 interface AiEvaluationResult {
   aiEligible: boolean;
   aiEligibleReason: string;
@@ -57,9 +53,7 @@ const validateAiResponse = (data: unknown): AiEvaluationResult => {
   };
 };
 
-// ═══════════════════════════════════════════
 // EVALUATE APPLICATION
-// ═══════════════════════════════════════════
 const evaluateApplication = async (
   userId: string,
   role: string,
@@ -294,9 +288,7 @@ const evaluateApplication = async (
   };
 };
 
-// ═══════════════════════════════════════════
 // RE-EVALUATE (Reset + Evaluate Again)
-// ═══════════════════════════════════════════
 const reEvaluateApplication = async (
   userId: string,
   role: string,
@@ -350,9 +342,9 @@ const reEvaluateApplication = async (
   // Re-evaluate
   return evaluateApplication(userId, role, applicationId);
 };
-// ═══════════════════════════════════════════
+
+
 // GET AI EVALUATION RESULT
-// ═══════════════════════════════════════════
 const getAiEvaluation = async (userId: string, role: string, applicationId: string) => {
   const application = await prisma.application.findFirst({
     where: { id: applicationId, isDeleted: false },

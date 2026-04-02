@@ -7,7 +7,17 @@ import { Role } from "../../../generated/prisma/enums";
 
 const router = Router();
 
-router.get("/", DepartmentController.getAllDepartments);
+router.get(
+  "/",
+  checkAuth(
+    Role.SUPER_ADMIN,
+    Role.UNIVERSITY_ADMIN,
+    Role.DEPARTMENT_HEAD,
+    Role.COMMITTEE_REVIEWER,
+    Role.STUDENT
+  ),
+  DepartmentController.getAllDepartments
+);
 
 router.get("/university/:universityId", DepartmentController.getDepartmentsByUniversityId);
 

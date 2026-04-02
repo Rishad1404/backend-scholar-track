@@ -19,20 +19,16 @@ const createDepartment = catchAsync(async (req: Request, res: Response) => {
 const getAllDepartments = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const role = req.user?.role;
-  const query = req.query;
 
-  const result = await DepartmentService.getAllDepartments(
-    userId,
-    role,
-    query as IQueryParams
-  );
+  const query = req.query;
+  const result = await DepartmentService.getAllDepartments(userId, role, query as IQueryParams);
 
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
     message: "Departments fetched successfully",
     data: result.data,
-    meta: result.meta, 
+    meta: result.meta,
   });
 });
 

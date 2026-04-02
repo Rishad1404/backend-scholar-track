@@ -442,7 +442,7 @@ const getAllStudents = async (
     .dynamicInclude(studentIncludeConfig)
     .paginate()
     .sort()
-    .fields()
+    // .fields()
     .execute();
 
   return result;

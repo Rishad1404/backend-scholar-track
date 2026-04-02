@@ -14,9 +14,7 @@ import AppError from "../../errorHelpers/AppError";
 import { envVars } from "../../../config/env";
 import { IQueryParams } from "../../interfaces/query.interface";
 import { QueryBuilder } from "../../utils/QueryBuilder";
-import {
-  subscriptionFilterableFields,
-} from "./subscription.constant";
+import { subscriptionFilterableFields } from "./subscription.constant";
 import { stripe, SUBSCRIPTION_PRICES } from "../../../config/stripe.config";
 
 // ═══════════════════════════════════════════
@@ -44,30 +42,27 @@ const getAdminWithUniversity = async (userId: string) => {
 // ═══════════════════════════════════════════
 // CREATE CHECKOUT SESSION
 // ═══════════════════════════════════════════
+// subscription.service.ts
+
 const createCheckoutSession = async (
   userId: string,
-  payload: { plan: SubscriptionPlan }
+  payload: { plan: SubscriptionPlan },
 ) => {
   const admin = await getAdminWithUniversity(userId);
 
-  // Check if already has active subscription
   if (admin.subscriptionStatus === SubscriptionStatus.ACTIVE) {
     throw new AppError(
       status.BAD_REQUEST,
-      "You already have an active subscription"
+      "You already have an active subscription",
     );
   }
 
   const priceConfig = SUBSCRIPTION_PRICES[payload.plan];
 
-  // Get or create Stripe customer-----------------------------------------
   let stripeCustomerId = admin.university.stripeCustomerId;
 
   if (!stripeCustomerId) {
     const customer = await stripe.customers.create({
-      email: admin.userId
-        ? undefined
-        : undefined,
       metadata: {
         universityId: admin.universityId,
         adminId: admin.id,
@@ -77,14 +72,12 @@ const createCheckoutSession = async (
 
     stripeCustomerId = customer.id;
 
-    // Save customer ID to university
     await prisma.university.update({
       where: { id: admin.universityId },
       data: { stripeCustomerId },
     });
   }
 
-  // Create Stripe Checkout Session
   const session = await stripe.checkout.sessions.create({
     customer: stripeCustomerId,
     payment_method_types: ["card"],
@@ -109,24 +102,11 @@ const createCheckoutSession = async (
       userId: admin.userId,
       plan: payload.plan,
     },
-    success_url: `${envVars.FRONTEND_URL}/dashboard/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${envVars.FRONTEND_URL}/dashboard/subscription/cancel`,
+    success_url: `${envVars.FRONTEND_URL}/admin/subscription/success?success=true&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${envVars.FRONTEND_URL}/admin/subscription/success?success=false`,
   });
 
-  // Create PENDING payment record
-  await prisma.subscriptionPayment.create({
-    data: {
-      universityId: admin.universityId,
-      adminId: admin.id,
-      plan: payload.plan,
-      amount: priceConfig.amount / 100, // Store in BDT, not poisha
-      currency: "BDT",
-      status: SubscriptionPaymentStatus.PENDING,
-      stripePaymentId: session.id,
-      stripeCustomerId,
-    },
-  });
-
+  // ✅ NO payment record here — only return the checkout URL
   return {
     sessionId: session.id,
     url: session.url,
@@ -138,60 +118,82 @@ const createCheckoutSession = async (
 // ═══════════════════════════════════════════
 const handlePaymentSuccess = async (
   sessionId: string,
-  stripeInvoiceId?: string
+  stripeInvoiceId?: string,
 ) => {
-  // Find payment record
-  const payment = await prisma.subscriptionPayment.findFirst({
+  // ✅ First check if already processed (idempotency)
+  const existingPayment = await prisma.subscriptionPayment.findFirst({
     where: { stripePaymentId: sessionId },
   });
 
-  if (!payment) {
-    console.error(
-      `Subscription payment not found for session: ${sessionId}`
-    );
-    return;
-  }
-
-  if (payment.status === SubscriptionPaymentStatus.COMPLETED) {
+  if (existingPayment?.status === SubscriptionPaymentStatus.COMPLETED) {
     console.log(`Payment ${sessionId} already processed`);
     return;
   }
+
+  // ✅ Get session details from Stripe
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (!session.metadata) {
+    console.error("No metadata in session:", sessionId);
+    return;
+  }
+
+  const { universityId, adminId, plan } = session.metadata;
 
   // Calculate expiry
   const now = new Date();
   const expiresAt = new Date(now);
 
-  if (payment.plan === SubscriptionPlan.MONTHLY) {
+  if (plan === SubscriptionPlan.MONTHLY) {
     expiresAt.setMonth(expiresAt.getMonth() + 1);
   } else {
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
   }
 
-  // Update payment + admin subscription status in transaction
+  const priceConfig =
+    SUBSCRIPTION_PRICES[plan as keyof typeof SUBSCRIPTION_PRICES];
+
   await prisma.$transaction([
-    // Update payment record
-    prisma.subscriptionPayment.update({
-      where: { id: payment.id },
-      data: {
-        status: SubscriptionPaymentStatus.COMPLETED,
-        stripeInvoiceId: stripeInvoiceId || null,
-        paidAt: now,
-        expiresAt,
-      },
-    }),
+    // ✅ CREATE payment record (not update)
+    existingPayment
+      ? prisma.subscriptionPayment.update({
+          where: { id: existingPayment.id },
+          data: {
+            status: SubscriptionPaymentStatus.COMPLETED,
+            stripeInvoiceId: stripeInvoiceId || null,
+            paidAt: now,
+            expiresAt,
+          },
+        })
+      : prisma.subscriptionPayment.create({
+          data: {
+            universityId,
+            adminId,
+            plan: plan as SubscriptionPlan,
+            amount: priceConfig.amount / 100,
+            currency: "BDT",
+            status: SubscriptionPaymentStatus.COMPLETED,
+            stripePaymentId: sessionId,
+            stripeInvoiceId: stripeInvoiceId || null,
+            stripeCustomerId: session.customer as string,
+            paidAt: now,
+            expiresAt,
+          },
+        }),
 
     // Activate admin subscription
     prisma.admin.update({
-      where: { id: payment.adminId },
+      where: { id: adminId },
       data: {
         subscriptionStatus: SubscriptionStatus.ACTIVE,
+        isOwner: true,
       },
     }),
 
     // Update university status if pending
     prisma.university.updateMany({
       where: {
-        id: payment.universityId,
+        id: universityId,
         status: "PENDING",
       },
       data: {
@@ -202,7 +204,7 @@ const handlePaymentSuccess = async (
 
   // Notify admin
   const admin = await prisma.admin.findFirst({
-    where: { id: payment.adminId },
+    where: { id: adminId },
     select: { userId: true },
   });
 
@@ -212,8 +214,8 @@ const handlePaymentSuccess = async (
         userId: admin.userId,
         type: NotificationType.SYSTEM_ANNOUNCEMENT,
         title: "Subscription Activated! 🎉",
-        message: `Your ${payment.plan} subscription has been activated. It expires on ${expiresAt.toLocaleDateString()}.`,
-        link: "/dashboard/subscription",
+        message: `Your ${plan} subscription has been activated. It expires on ${expiresAt.toLocaleDateString()}.`,
+        link: "/admin/subscription",
       },
     });
   }
@@ -294,7 +296,7 @@ const getSubscriptionStatus = async (userId: string) => {
 const getPaymentHistory = async (
   userId: string,
   role: string,
-  query: IQueryParams
+  query: IQueryParams,
 ) => {
   const queryBuilder = new QueryBuilder<
     any,
@@ -343,10 +345,7 @@ const cancelSubscription = async (userId: string) => {
   const admin = await getAdminWithUniversity(userId);
 
   if (admin.subscriptionStatus !== SubscriptionStatus.ACTIVE) {
-    throw new AppError(
-      status.BAD_REQUEST,
-      "No active subscription to cancel"
-    );
+    throw new AppError(status.BAD_REQUEST, "No active subscription to cancel");
   }
 
   await prisma.admin.update({

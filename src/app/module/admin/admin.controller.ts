@@ -4,10 +4,11 @@ import { sendResponse } from "../../shared/sendResponse";
 import { AdminService } from "./admin.service";
 import status from "http-status";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
+import { IQueryParams } from "../../interfaces/query.interface";
 
 const getAllAdmins = catchAsync(async (req: Request, res: Response) => {
   const {userId,role}=req.user
-  const result = await AdminService.getAllAdmins(userId, role);
+  const result = await AdminService.getAllAdmins(userId, role, req.query as IQueryParams);
   sendResponse(res, {
     httpStatusCode: status.OK,
     success: true,
@@ -74,10 +75,11 @@ const deleteAdmin = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+
 export const AdminController = {
   getAllAdmins,
   getAdminById,
   updateAdmin,
   addAdminToUniversity,
-  deleteAdmin
+  deleteAdmin,
 };
