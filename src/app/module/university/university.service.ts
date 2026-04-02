@@ -3,7 +3,7 @@ import { Request } from "express";
 import AppError from "../../errorHelpers/AppError";
 import status from "http-status";
 import { deleteFileFromCloudinary } from "../../../config/cloudinary.config";
-import { Role, UniversityStatus } from "../../../generated/prisma/enums";
+import { Role, ScholarshipStatus, UniversityStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { TUpdateUniversityStatusPayload } from "./university.validation";
 import { IQueryParams } from "../../interfaces/query.interface";
@@ -363,15 +363,93 @@ const deleteUniversity = async (universityId: string) => {
     },
   });
 };
-const getPublicUniversities = async () => {
-  return await prisma.university.findMany({
+
+
+const getPublicUniversities = async (query: IQueryParams) => {
+  const queryBuilder = new QueryBuilder<
+    University,
+    Prisma.UniversityWhereInput,
+    Prisma.UniversityInclude
+  >(prisma.university, query, {
+    searchableFields: ["name"],
+    filterableFields: [],
+  });
+
+  const result = await queryBuilder
+    .search()
+    .filter()
+    .where({
+      isDeleted: false,
+      status: UniversityStatus.APPROVED,
+    })
+    .include({
+      _count: {
+        select: {
+          students: true,
+          scholarships: true,
+          departments: true,
+        },
+      },
+    })
+    .paginate()
+    .sort()
+    .fields()
+    .execute();
+
+  return result;
+};
+
+// ADD this new method:
+const getPublicUniversityById = async (universityId: string) => {
+  const university = await prisma.university.findFirst({
     where: {
+      id: universityId,
       isDeleted: false,
       status: UniversityStatus.APPROVED,
     },
-    orderBy: { name: "asc" },
+    include: {
+      departments: {
+        where: { isDeleted: false },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      },
+      academicLevels: {
+        where: { isDeleted: false },
+        select: { id: true, name: true },
+      },
+      _count: {
+        select: {
+          students: true,
+          scholarships: true,
+          departments: true,
+          admins: true,
+          reviewers: true,
+          departmentHeads: true,
+        },
+      },
+    },
   });
+
+  if (!university) {
+    throw new AppError(status.NOT_FOUND, "University not found");
+  }
+
+  // Also fetch active scholarships count
+  const activeScholarshipsCount = await prisma.scholarship.count({
+    where: {
+      universityId,
+      isDeleted: false,
+      status: ScholarshipStatus.ACTIVE,
+    },
+  });
+
+  return {
+    ...university,
+    activeScholarshipsCount,
+  };
 };
+
+
 
 export const UniversityService = {
   getAllUniversities,
@@ -380,4 +458,5 @@ export const UniversityService = {
   updateUniversityStatus,
   deleteUniversity,
   getPublicUniversities,
+  getPublicUniversityById
 };

@@ -9,6 +9,7 @@ import { Role } from "../../../generated/prisma/enums";
 const router = Router();
 
 router.get("/public", UniversityController.getPublicUniversities);
+router.get("/public/:universityId", UniversityController.getPublicUniversityById);
 
 router.get(
   "/",

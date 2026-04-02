@@ -88,11 +88,29 @@ const deleteUniversity = catchAsync(async (req: Request, res: Response) => {
 
 const getPublicUniversities = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await UniversityService.getPublicUniversities();
+    const result = await UniversityService.getPublicUniversities(
+      req.query as IQueryParams
+    );
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
       message: "Universities fetched successfully",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
+const getPublicUniversityById = catchAsync(
+  async (req: Request, res: Response) => {
+    const { universityId } = req.params;
+    const result = await UniversityService.getPublicUniversityById(
+      universityId as string
+    );
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "University fetched successfully",
       data: result,
     });
   }
@@ -105,4 +123,5 @@ export const UniversityController = {
   updateUniversityStatus,
   deleteUniversity,
   getPublicUniversities,
+  getPublicUniversityById
 };
