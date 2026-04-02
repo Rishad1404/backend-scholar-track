@@ -1,7 +1,7 @@
 import { Server } from "http";
-import app from "./app";
 import { seedSuperAdmin } from "./app/utils/seed";
 import { envVars } from "./config/env";
+import app from "./app";
 
 let server: Server;
 
@@ -64,3 +64,5 @@ process.on("unhandledRejection", (error) => {
 });
 
 bootstrap();
+
+export default app;

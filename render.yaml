@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: backend-scholar-track
+    runtime: node
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production

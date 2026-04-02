@@ -12,7 +12,7 @@ export const checkAuth =
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // session token verification
-      const sessionToken = CookieUtils.getCookie(req, "better-auth.session_token");
+      const sessionToken = CookieUtils.getCookie(req, "better-auth.session_token") || CookieUtils.getCookie(req,"__better-auth.session_token");
       if (!sessionToken) {
         throw new Error("Unauthorized access! No session token provided");
       }
