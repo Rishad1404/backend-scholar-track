@@ -18,6 +18,16 @@ interface IStatsUser {
   email: string;
 }
 
+export interface MonthlyCount {
+  month: Date;
+  count: number;
+}
+
+export interface MonthlyRevenue {
+    month: Date;
+    total: number;
+  }
+
 // MAIN: Route to correct stats function
 const getDashboardStats = async (user: IStatsUser) => {
   switch (user.role) {
@@ -85,10 +95,12 @@ const getSuperAdminStats = async () => {
     where: { isDeleted: false },
   });
 
-  const formattedRoleDistribution = roleDistribution.map(({ role, _count }) => ({
-    role,
-    count: _count.id,
-  }));
+  const formattedRoleDistribution = roleDistribution.map(
+    ({ role, _count }) => ({
+      role,
+      count: _count.id,
+    }),
+  );
 
   // University status distribution (pie chart)
   const universityStatusDistribution = await prisma.university.groupBy({
@@ -111,10 +123,12 @@ const getSuperAdminStats = async () => {
     where: { isDeleted: false },
   });
 
-  const formattedUserStatus = userStatusDistribution.map(({ status, _count }) => ({
-    status,
-    count: _count.id,
-  }));
+  const formattedUserStatus = userStatusDistribution.map(
+    ({ status, _count }) => ({
+      status,
+      count: _count.id,
+    }),
+  );
 
   // Active vs Banned vs Deleted users
   const activeUsers = await prisma.user.count({
@@ -380,7 +394,8 @@ const getUniversityAdminStats = async (userId: string) => {
   );
 
   // Monthly applications (bar chart)
-  const monthlyApplications = await getMonthlyApplicationsBarChart(universityId);
+  const monthlyApplications =
+    await getMonthlyApplicationsBarChart(universityId);
 
   // Top scholarships by applications
   const topScholarships = await prisma.scholarship.findMany({
@@ -466,28 +481,31 @@ const getDepartmentHeadStats = async (userId: string) => {
     throw new AppError(status.NOT_FOUND, "Department Head profile not found");
   }
 
-  const [totalStudentsInDept, totalScholarshipsForDept, activeScholarshipsForDept] =
-    await Promise.all([
-      prisma.studentAcademicInfo.count({
-        where: {
-          departmentId: deptHead.departmentId,
-          isDeleted: false,
-        },
-      }),
-      prisma.scholarship.count({
-        where: {
-          departmentId: deptHead.departmentId,
-          isDeleted: false,
-        },
-      }),
-      prisma.scholarship.count({
-        where: {
-          departmentId: deptHead.departmentId,
-          status: ScholarshipStatus.ACTIVE,
-          isDeleted: false,
-        },
-      }),
-    ]);
+  const [
+    totalStudentsInDept,
+    totalScholarshipsForDept,
+    activeScholarshipsForDept,
+  ] = await Promise.all([
+    prisma.studentAcademicInfo.count({
+      where: {
+        departmentId: deptHead.departmentId,
+        isDeleted: false,
+      },
+    }),
+    prisma.scholarship.count({
+      where: {
+        departmentId: deptHead.departmentId,
+        isDeleted: false,
+      },
+    }),
+    prisma.scholarship.count({
+      where: {
+        departmentId: deptHead.departmentId,
+        status: ScholarshipStatus.ACTIVE,
+        isDeleted: false,
+      },
+    }),
+  ]);
 
   // Screening stats
   const pendingScreening = await prisma.application.count({
@@ -568,7 +586,9 @@ const getDepartmentHeadStats = async (userId: string) => {
       screeningRejected,
     },
     screeningRate:
-      totalScreened > 0 ? Math.round((screeningPassed / totalScreened) * 100) : 0,
+      totalScreened > 0
+        ? Math.round((screeningPassed / totalScreened) * 100)
+        : 0,
     charts: {
       applicationStatusDistribution: formattedApplicationStatus,
       academicStatusDistribution: formattedAcademicStatus,
@@ -663,8 +683,10 @@ const getCommitteeReviewerStats = async (userId: string) => {
 
   const scoreDistribution = {
     excellent: allMyReviews.filter((r) => r.totalScore >= 35).length, // 35-40
-    good: allMyReviews.filter((r) => r.totalScore >= 25 && r.totalScore < 35).length, // 25-34
-    average: allMyReviews.filter((r) => r.totalScore >= 15 && r.totalScore < 25).length, // 15-24
+    good: allMyReviews.filter((r) => r.totalScore >= 25 && r.totalScore < 35)
+      .length, // 25-34
+    average: allMyReviews.filter((r) => r.totalScore >= 15 && r.totalScore < 25)
+      .length, // 15-24
     poor: allMyReviews.filter((r) => r.totalScore < 15).length, // 0-14
   };
 
@@ -697,10 +719,12 @@ const getCommitteeReviewerStats = async (userId: string) => {
     },
     scoreBreakdown: {
       avgGpaScore: Math.round((scoreBreakdown._avg.gpaScore || 0) * 100) / 100,
-      avgEssayScore: Math.round((scoreBreakdown._avg.essayScore || 0) * 100) / 100,
+      avgEssayScore:
+        Math.round((scoreBreakdown._avg.essayScore || 0) * 100) / 100,
       avgFinancialScore:
         Math.round((scoreBreakdown._avg.financialScore || 0) * 100) / 100,
-      avgCriteriaScore: Math.round((scoreBreakdown._avg.criteriaScore || 0) * 100) / 100,
+      avgCriteriaScore:
+        Math.round((scoreBreakdown._avg.criteriaScore || 0) * 100) / 100,
     },
     charts: {
       scoreDistribution,
@@ -886,11 +910,6 @@ const getApplicationStatusPieChart = async (universityId?: string) => {
 
 // Monthly applications bar chart
 const getMonthlyApplicationsBarChart = async (universityId?: string) => {
-  interface MonthlyCount {
-    month: Date;
-    count: number;
-  }
-
   let monthlyApplications: MonthlyCount[];
 
   if (universityId) {
@@ -923,10 +942,7 @@ const getMonthlyApplicationsBarChart = async (universityId?: string) => {
 
 // Monthly revenue bar chart (subscription payments)
 const getMonthlyRevenueBarChart = async () => {
-  interface MonthlyRevenue {
-    month: Date;
-    total: number;
-  }
+
 
   const monthlyRevenue: MonthlyRevenue[] = await prisma.$queryRaw`
     SELECT DATE_TRUNC('month', "paidAt") AS month,

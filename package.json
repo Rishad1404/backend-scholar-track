@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/src/server.js",
+    "start": "node dist/server.js",
     "build": "npx tsc",
     "dev": "tsx watch src/server.ts",
     "lint": "eslint ./src/**/*",
@@ -15,7 +15,7 @@
     "pull": "prisma db pull",
     "stripe:webhook": "stripe listen --forward-to localhost:4242/webhook",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "vercel-build": "npx prisma generate && npx tsc",
+    "vercel-build": "npx prisma generate && npx tsc && cp -r src/app/templates dist/app/templates",
     "postinstall": "npx prisma generate"
   },
   "keywords": [],

@@ -17,9 +17,10 @@ app.set("query parser", (str: string) => {
 });
 
 app.set("view engine", "ejs");
-app.set("views", path.resolve(process.cwd(), `src/app/templates`));
 
-app.post("/webhook",express.raw({type: 'application/json'}),webhookHandler);
+app.set("views", path.join(__dirname, "app/templates"));
+
+app.post("/webhook", express.raw({ type: "application/json" }), webhookHandler);
 
 app.use(
   cors({
@@ -35,21 +36,13 @@ app.use(
   }),
 );
 
-
 app.use("/api/auth", toNodeHandler(auth));
-
-// Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
-
-// Middleware to parse JSON bodies
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
 
 app.use("/api/v1", IndexRoutes);
 
-// Basic route
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({
     success: true,

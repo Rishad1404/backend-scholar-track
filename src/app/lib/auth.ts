@@ -6,6 +6,9 @@ import { bearer, emailOTP } from "better-auth/plugins";
 import { sendEmail } from "../utils/email";
 import { envVars } from "../../config/env";
 
+
+const isProduction = envVars.NODE_ENV === "production";
+
 export const auth = betterAuth({
   baseURL: envVars.BETTER_AUTH_URL,
   secret: envVars.BETTER_AUTH_SECRET,
@@ -141,7 +144,7 @@ export const auth = betterAuth({
   ],
   advanced: {
     // disableCSRFCheck: true,
-    useSecureCookies: false,
+    useSecureCookies: isProduction,
     cookies: {
       state: {
         attributes: {
